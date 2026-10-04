@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>No-Intro DAT Viewer — Visor de metadatos de ROMs (no oficial)</title>
+<meta name="description" content="Visor web no oficial para explorar los archivos DAT de No-Intro. Consulta nombres, regiones, idiomas, hashes y variantes de juegos retro de forma visual. No aloja ni distribuye ROMs.">
+<meta name="keywords" content="No-Intro, DAT, ROM, metadata, retro games, videojuegos retro, No-Intro DAT, game database, CRC32, MD5, SHA1, preservación digital, emulación">
+<meta name="author" content="No-Intro DAT Viewer">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0f1115">
+<meta property="og:type" content="website">
+<meta property="og:title" content="No-Intro DAT Viewer — Visor de metadatos de ROMs">
+<meta property="og:description" content="Explora los DAT de No-Intro de forma visual: nombres, regiones, idiomas, hashes y variantes de juegos retro.">
+<meta property="og:locale" content="es_ES">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:site_name" content="No-Intro DAT Viewer">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="No-Intro DAT Viewer">
+<meta name="twitter:description" content="Visor no oficial de metadatos DAT de No-Intro para juegos retro.">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%237c5cff'/%3E%3Cstop offset='100%25' stop-color='%234f8cff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='10' y='6' width='44' height='52' rx='6' fill='url(%23g)'/%3E%3Crect x='18' y='14' width='28' height='14' rx='2' fill='rgba(0,0,0,.4)'/%3E%3Crect x='20' y='36' width='24' height='3' rx='1.5' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='43' width='18' height='3' rx='1.5' fill='%23fff' opacity='.55'/%3E%3C/svg%3E">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"No-Intro DAT Viewer","applicationCategory":"UtilitiesApplication","operatingSystem":"Web","description":"Visor no oficial de metadatos de ROMs basado en los archivos DAT de No-Intro.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT"}
+</script>
+
+<style>
+:root {
+  --bg: #0f1115; --surface: #171a21; --surface-2: #1f2330; --surface-3: #262b3a;
+  --border: #2a2f3e; --text: #e6e8ee; --text-dim: #8b93a7;
+  --accent: #4f8cff; --accent-2: #7c5cff; --accent-3: #f59e0b; --accent-4: #06b6d4;
+  --accent-5: #ef4444; --accent-6: #14b8a6; --accent-7: #ec4899;
+  --accent-feat: #818cf8; --accent-coll: #a855f7; --success: #23c98c;
+  --region-min: 8ch;
+}
+html[data-theme="light"] {
+  --bg: #f5f7fb; --surface: #ffffff; --surface-2: #eef1f7; --surface-3: #e3e8f2;
+  --border: #dfe4ee; --text: #1a1d26; --text-dim: #5b6377;
+  --accent-3: #d97706; --accent-4: #0891b2; --accent-5: #dc2626;
+  --accent-6: #0d9488; --accent-7: #be185d; --accent-feat: #6366f1; --accent-coll: #9333ea;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased;
+}
+body.no-scroll { overflow: hidden; }
+
+header.top {
+  position: relative; padding: 20px 18px 12px;
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.top-actions { position: absolute; top: 16px; right: 16px; display: flex; gap: 6px; align-items: center; z-index: 20; }
+.lang-select {
+  height: 38px; padding: 0 26px 0 10px; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: inherit; appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b93a7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+}
+.lang-select:hover { border-color: var(--accent); color: var(--accent); }
+.menu-btn {
+  width: 38px; height: 38px; border-radius: 10px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--text); font-size: 20px; line-height: 1;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-family: inherit;
+}
+.menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+.menu-wrap { position: relative; }
+.menu-dropdown {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5); min-width: 230px; z-index: 60; overflow: hidden;
+}
+.menu-dropdown.show { display: block; }
+.menu-dropdown button {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: transparent; border: none; color: var(--text); padding: 12px 15px;
+  font-size: 13.5px; cursor: pointer; font-family: inherit;
+}
+.menu-dropdown button:hover { background: var(--surface-2); }
+.menu-dropdown button .ic { font-size: 15px; }
+
+.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-right: 120px; }
+.brand-logo { width: 48px; height: 48px; flex: 0 0 auto; filter: drop-shadow(0 4px 12px rgba(79,140,255,.35)); }
+.brand-text h1 {
+  margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.brand-text .brand-sub { font-size: 11.5px; color: var(--text-dim); letter-spacing: .04em; font-weight: 600; margin-top: 1px; }
+.stats { display: flex; gap: 6px; flex-wrap: wrap; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; font-size: 12px; color: var(--text-dim); }
+.stat b { font-size: 14px; color: var(--text); margin-right: 3px; }
+
+.controls {
+  position: sticky; top: 0; z-index: 10; background: var(--bg);
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.search-row { display: flex; gap: 8px; align-items: stretch; }
+.search-wrap { position: relative; flex: 1; min-width: 0; }
+.search-wrap input {
+  width: 100%; padding: 11px 40px 11px 38px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; font-size: 15px;
+  color: var(--text); outline: none;
+}
+.search-wrap input:focus { border-color: var(--accent); }
+.search-wrap .icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; font-size: 14px; }
+.clear-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: none; color: var(--text-dim); font-size: 20px;
+  cursor: pointer; padding: 4px 10px; border-radius: 8px; display: none;
+}
+.clear-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn {
+  flex: 0 0 auto; width: 44px; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 12px; cursor: pointer; font-size: 17px;
+}
+.icon-btn:hover { border-color: var(--accent); }
+.icon-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+.icon-btn.merge-btn.active { background: var(--success); border-color: var(--success); color: white; }
+.icon-btn.hidden { display: none; }
+.icon-btn.has-filters { position: relative; }
+.icon-btn .badge-count {
+  position: absolute; top: -4px; right: -4px; background: var(--accent-5); color: white;
+  font-size: 9px; font-weight: 700; border-radius: 999px; padding: 1px 5px;
+  min-width: 16px; text-align: center; display: none;
+}
+.icon-btn.has-filters .badge-count.has { display: inline-block; }
+
+.filters-panel {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  z-index: 90; padding: 20px; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.filters-panel.show { display: flex; }
+.filters-panel-inner {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 0; max-width: 640px; width: 100%; max-height: 88vh; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5); display: flex; flex-direction: column;
+}
+.filters-body {
+  padding: 16px; overflow-y: auto; flex: 1 1 auto;
+  display: flex; flex-direction: column; gap: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+.filters-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 14px 16px 10px; background: var(--surface);
+  border-bottom: 1px solid var(--border); flex: 0 0 auto;
+}
+.filters-header h2 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+.filters-close {
+  background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+  border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; font-family: inherit;
+}
+.filters-close:hover { color: var(--text); border-color: var(--accent); }
+.filters-footer {
+  padding: 12px 16px 14px; background: var(--surface);
+  border-top: 1px solid var(--border); display: flex; gap: 8px; flex: 0 0 auto;
+}
+.apply-btn {
+  flex: 1 1 auto; padding: 12px 18px; background: var(--accent); color: white;
+  border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+.apply-btn:hover { background: var(--accent-2); }
+.clear-btn-full {
+  flex: 0 0 auto; padding: 12px 16px; background: transparent;
+  color: var(--text-dim); border: 1px solid var(--border); border-radius: 10px;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.clear-btn-full:hover { color: var(--text); border-color: var(--accent); }
+
+.filter-block { display: flex; flex-direction: column; gap: 6px; }
+.filter-label {
+  font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: .05em; font-weight: 600;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 999px; color: var(--text-dim); font-size: 12.5px;
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+.chip:hover { color: var(--text); border-color: var(--accent); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+.chip.system-chip.active { background: var(--accent-2); border-color: var(--accent-2); }
+.chip.region-chip.active  { background: var(--accent-2); border-color: var(--accent-2); }
+.chip.lang-chip.active    { background: var(--accent-4); border-color: var(--accent-4); }
+.chip.collection-chip.active { background: var(--accent-coll); border-color: var(--accent-coll); }
+.chip.chip-more { background: transparent; border-style: dashed; color: var(--accent); font-weight: 700; }
+.chip.chip-more:hover { color: var(--accent-2); border-color: var(--accent-2); }
+.chip .count { opacity: 0.75; margin-left: 5px; font-size: 11px; }
+
+main { padding: 10px 12px 40px; max-width: 900px; margin: 0 auto; }
+.result-info { color: var(--text-dim); font-size: 12.5px; padding: 4px 4px 10px; }
+.result-info b { color: var(--text); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  margin-bottom: 8px; overflow: hidden;
+}
+.card:hover { border-color: var(--accent); }
+.card.open { border-color: var(--accent); }
+.card.collection-card { border-left: 4px solid var(--accent-coll); }
+.card-header {
+  padding: 12px 14px; cursor: pointer; user-select: none;
+  display: flex; flex-direction: column; gap: 7px; position: relative;
+}
+.card-header::after {
+  content: '▾'; position: absolute; right: 12px; top: 12px;
+  color: var(--text-dim); font-size: 14px; transition: transform .2s;
+}
+.card.open .card-header::after { transform: rotate(180deg); }
+.row1 { display: flex; align-items: baseline; gap: 8px; padding-right: 20px; flex-wrap: wrap; }
+.gid {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px; color: var(--text-dim); background: var(--surface-2);
+  padding: 2px 7px; border-radius: 6px; flex: 0 0 auto;
+}
+.gname { font-weight: 600; font-size: 14.5px; flex: 1; min-width: 0; word-break: break-word; }
+.badges { display: flex; gap: 5px; flex-wrap: wrap; }
+.badge {
+  font-size: 10.5px; padding: 2px 8px; border-radius: 999px;
+  background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.badge.cat { color: var(--accent); border-color: rgba(79,140,255,.3); }
+.badge.console-badge { color: var(--accent-2); border-color: rgba(124,92,255,.3); font-weight: 600; }
+.badge.games-count { color: var(--accent); border-color: rgba(79,140,255,.4); background: rgba(79,140,255,.1); font-weight: 600; }
+.badge.owned-badge { color: var(--success); border-color: rgba(35,201,140,.4); background: rgba(35,201,140,.1); }
+.badge.merged-badge { color: var(--success); border-color: rgba(35,201,140,.4); background: rgba(35,201,140,.1); font-weight: 600; }
+.badge.collection-badge { color: var(--accent-coll); border-color: rgba(168,85,247,.4); background: rgba(168,85,247,.1); font-weight: 600; }
+
+.members { display: none; padding: 0 12px 12px; flex-direction: column; gap: 8px; }
+.card.open .members { display: flex; }
+.member {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; position: relative;
+}
+.member:hover { border-color: var(--accent); }
+.member.open { border-color: var(--accent); background: var(--surface-3); }
+.member::after {
+  content: '▾'; position: absolute; right: 10px; top: 10px;
+  color: var(--text-dim); font-size: 12px; transition: transform .2s;
+}
+.member.open::after { transform: rotate(180deg); }
+.member-head { display: flex; align-items: baseline; column-gap: 8px; padding-right: 18px; flex-wrap: nowrap; }
+.member-regions { display: flex; flex-direction: row; gap: 5px; align-items: center; flex: 0 0 auto; }
+.member-regions.stacked { flex-direction: column; align-items: flex-start; gap: 3px; }
+.member-head .mname { font-weight: 600; font-size: 13.5px; flex: 1 1 auto; min-width: 0; word-break: break-word; }
+.mh-right { margin-left: auto; flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; row-gap: 1px; text-align: right; white-space: nowrap; }
+.mh-right .msize { font-size: 11.5px; color: var(--text-dim); }
+.mh-right .inline-count { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .03em; font-weight: 600; }
+
+.member-extras, .member-badges { display: none; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.member.open .member-extras, .member.open .member-badges { display: flex; }
+.member-details {
+  display: none; margin-top: 8px; grid-template-columns: auto 1fr;
+  gap: 3px 10px; font-size: 11.5px;
+}
+.member.open .member-details { display: grid; }
+.member-details .k { color: var(--text-dim); font-weight: 500; white-space: nowrap; }
+.member-details .v { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); word-break: break-all; }
+.member-details .v.wrap { word-break: break-word; }
+
+.submembers { display: none; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.member.open .submembers { display: flex; }
+.type-group {
+  background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--accent-3);
+  border-radius: 8px; padding: 8px 10px; margin-left: 16px;
+}
+.type-header { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+.type-count { font-size: 10.5px; color: var(--text-dim); font-weight: 500; white-space: nowrap; }
+.type-variants { display: flex; flex-direction: column; gap: 5px; }
+.submember {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 8px; margin-left: 12px; cursor: pointer; position: relative;
+}
+.submember:hover { border-color: var(--accent); }
+.submember.open { border-color: var(--accent); background: var(--surface-3); }
+.submember::after {
+  content: '▾'; position: absolute; right: 8px; top: 6px;
+  color: var(--text-dim); font-size: 10px; transition: transform .2s;
+}
+.submember.open::after { transform: rotate(180deg); }
+.submember-head { display: flex; align-items: baseline; column-gap: 6px; padding-right: 14px; flex-wrap: wrap; }
+.sh-main { display: flex; align-items: baseline; column-gap: 5px; flex: 1 1 auto; min-width: 0; flex-wrap: wrap; }
+.sh-main .sname { font-weight: 600; font-size: 12px; flex: 1 1 auto; min-width: 0; word-break: break-word; }
+.sh-main .gid { font-size: 10.5px; padding: 1px 5px; }
+.submember-head .ssize { flex: 0 0 auto; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.submember-langs, .submember-badges { display: none; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+.submember.open .submember-langs, .submember.open .submember-badges { display: flex; }
+.submember-details { display: none; margin-top: 6px; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 11px; }
+.submember.open .submember-details { display: grid; }
+.submember-details .k { color: var(--text-dim); font-weight: 500; white-space: nowrap; }
+.submember-details .v { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); word-break: break-all; }
+.submember-details .v.wrap { word-break: break-word; }
+
+.variant-tag {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 6px; flex: 0 0 auto;
+  border: 1px solid var(--border); background: var(--surface-3); color: var(--text-dim);
+}
+.variant-tag.chip-region { background: rgba(124,92,255,.14); color: var(--accent-2); border-color: rgba(124,92,255,.35); min-width: calc(var(--region-min) + 16px); text-align: center; }
+.variant-tag.chip-lang { background: rgba(6,182,212,.14); color: var(--accent-4); border-color: rgba(6,182,212,.35); }
+.variant-tag.chip-lang.inferred { border-style: dashed; opacity: 0.75; }
+.variant-tag.chip-variant { background: rgba(245,158,11,.14); color: var(--accent-3); border-color: rgba(245,158,11,.35); }
+.variant-tag.chip-license { background: rgba(239,68,68,.14); color: var(--accent-5); border-color: rgba(239,68,68,.35); }
+.variant-tag.chip-edition { background: rgba(20,184,166,.14); color: var(--accent-6); border-color: rgba(20,184,166,.35); }
+.variant-tag.chip-feature { background: rgba(129,140,248,.14); color: var(--accent-feat); border-color: rgba(129,140,248,.35); }
+.variant-tag.chip-collection { background: rgba(168,85,247,.14); color: var(--accent-coll); border-color: rgba(168,85,247,.4); }
+.variant-tag.chip-console { background: rgba(35,201,140,.14); color: var(--success); border-color: rgba(35,201,140,.4); }
+.variant-tag.chip-other { background: var(--surface-3); color: var(--text-dim); }
+.variant-tag.chip-unknown { background: rgba(236,72,153,.14); color: var(--accent-7); border-color: rgba(236,72,153,.4); border-style: dashed; }
+.variant-tag.tiny { font-size: 9px; padding: 1px 6px; border-radius: 4px; letter-spacing: .03em; }
+
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; padding: 16px 8px 4px; }
+.page-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; min-width: 38px;
+}
+.page-btn:hover:not(:disabled) { border-color: var(--accent); }
+.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.page-btn.current { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+.page-info { color: var(--text-dim); font-size: 12.5px; margin: 0 6px; }
+.perpage-select {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 6px 8px; font-size: 12.5px; cursor: pointer;
+}
+
+.empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+.back-to-top {
+  position: fixed; right: 16px; bottom: 16px; width: 44px; height: 44px;
+  border-radius: 50%; background: var(--accent); color: white; border: none;
+  cursor: pointer; font-size: 20px; display: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,.35); z-index: 20;
+}
+.back-to-top.show { display: block; }
+
+#loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 80px 20px; gap: 14px; color: var(--text-dim);
+}
+#loading .spinner {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 3px solid var(--border); border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.load-progress {
+  width: 100%; max-width: 340px; height: 6px; background: var(--surface-2);
+  border-radius: 999px; overflow: hidden; margin-top: 8px;
+}
+.load-progress .bar {
+  height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  transition: width .25s ease;
+}
+
+#error-box {
+  display: none; background: var(--surface); border: 1px solid var(--accent-5);
+  border-left: 4px solid var(--accent-5); border-radius: 12px;
+  padding: 18px 20px; margin: 30px auto; max-width: 600px; color: var(--text);
+}
+#error-box h2 { margin: 0 0 8px; font-size: 15px; color: var(--accent-5); }
+#error-box p { margin: 6px 0; font-size: 13px; line-height: 1.5; }
+#error-box code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 12px; }
+
+footer.site-footer {
+  border-top: 1px solid var(--border); margin-top: 40px; padding: 28px 18px 40px;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--surface-2) 100%);
+}
+.footer-inner { max-width: 900px; margin: 0 auto; }
+.footer-title {
+  font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text-dim); font-weight: 700; margin: 0 0 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.footer-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.license-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
+}
+.license-block h3 { margin: 0 0 8px; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 7px; }
+.license-block p { margin: 6px 0; font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
+.license-block a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted currentColor; }
+.license-block a:hover { color: var(--accent-2); }
+.license-block code {
+  background: var(--surface-2); padding: 1px 5px; border-radius: 4px;
+  font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--accent-4);
+}
+.footer-meta { text-align: center; color: var(--text-dim); font-size: 11.5px; margin-top: 20px; line-height: 1.7; }
+.footer-meta .sep { opacity: .4; margin: 0 6px; }
+
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.modal.show { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 22px 22px 18px; max-width: 560px; width: 100%; max-height: 85vh;
+  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.modal-box h2 { margin: 0 0 14px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.modal-box p { margin: 10px 0; font-size: 13.5px; line-height: 1.6; color: var(--text); }
+.modal-box p.muted { color: var(--text-dim); font-size: 12.5px; }
+.modal-box strong { color: var(--accent); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+.modal-close {
+  background: var(--accent); color: white; border: none; border-radius: 8px;
+  padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.modal-close:hover { background: var(--accent-2); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-actions">
+    <select class="lang-select" id="ui-lang" aria-label="Language">
+      <option value="es">ES · Español</option>
+      <option value="en">EN · English</option>
+      <option value="pt-br">PT · Português (BR)</option>
+      <option value="fr">FR · Français</option>
+      <option value="de">DE · Deutsch</option>
+      <option value="it">IT · Italiano</option>
+      <option value="ja">JA · 日本語</option>
+    </select>
+    <div class="menu-wrap">
+      <button class="menu-btn" id="menu-btn" title="Menú / Menu" aria-label="Menú">⋮</button>
+      <div class="menu-dropdown" id="menu-dropdown">
+        <button data-modal="modal-aviso"><span class="ic">ℹ️</span><span data-i18n="legal_notice">Aviso legal</span></button>
+        <button data-modal="modal-descargo"><span class="ic">⚠️</span><span data-i18n="disclaimer">Descargo de responsabilidad</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="brand">
+    <svg class="brand-logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7c5cff"/><stop offset="100%" stop-color="#4f8cff"/></linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(255,255,255,.35)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></linearGradient>
+      </defs>
+      <path d="M12 8 h40 a4 4 0 0 1 4 4 v40 a4 4 0 0 1 -4 4 h-40 a4 4 0 0 1 -4 -4 v-40 a4 4 0 0 1 4 -4 z" fill="url(#lg)"/>
+      <path d="M12 8 h40 a4 4 0 0 1 4 4 v10 h-48 v-10 a4 4 0 0 1 4 -4 z" fill="url(#lg2)"/>
+      <rect x="18" y="14" width="28" height="14" rx="2" fill="rgba(0,0,0,.4)"/>
+      <rect x="20" y="36" width="24" height="3" rx="1.5" fill="#fff" opacity=".85"/>
+      <rect x="20" y="43" width="18" height="3" rx="1.5" fill="#fff" opacity=".55"/>
+      <rect x="20" y="50" width="12" height="3" rx="1.5" fill="#fff" opacity=".3"/>
+      <rect x="20" y="56" width="24" height="2" fill="rgba(0,0,0,.35)"/>
+    </svg>
+    <div class="brand-text">
+      <h1>No-Intro DAT Viewer</h1>
+      <div class="brand-sub" data-i18n="subtitle">Herramienta no oficial</div>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<div class="controls">
+  <div class="search-row">
+    <div class="search-wrap">
+      <span class="icon">🔍</span>
+      <input id="search" type="search" data-i18n-placeholder="search_placeholder" placeholder="Buscar juego, región, idioma, ID, CRC..." autocomplete="off" spellcheck="false">
+      <button class="clear-btn" id="clear">×</button>
+    </div>
+    <button class="icon-btn merge-btn hidden" id="merge-btn" data-i18n-title="merge_toggle" title="Unir entre consolas">🔗</button>
+    <button class="icon-btn" id="collections-toggle" data-i18n-title="collections_toggle" title="Modo colecciones">📦</button>
+    <button class="icon-btn has-filters" id="filters-toggle" data-i18n-title="filters" title="Filtros">⚙<span class="badge-count" id="filters-badge"></span></button>
+    <button class="icon-btn" id="theme" title="Tema">🌙</button>
+  </div>
+</div>
+
+<div class="filters-panel" id="filters-panel">
+  <div class="filters-panel-inner">
+    <div class="filters-header">
+      <h2>⚙ <span data-i18n="filters">Filtros</span></h2>
+      <button class="filters-close" id="filters-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="filters-body">
+      <div class="filter-block">
+        <div class="filter-label" data-i18n="view_mode">Vista</div>
+        <div class="chips" id="view-chips">
+          <div class="chip active" data-view="normal" data-i18n="view_normal">Normal</div>
+          <div class="chip collection-chip" data-view="collections" data-i18n="view_collections">📦 Colecciones</div>
+        </div>
+      </div>
+      <div class="filter-block">
+        <div class="filter-label" data-i18n="sort_by">Ordenar por</div>
+        <div class="chips" id="sort-chips">
+          <div class="chip active" data-sort="name" data-i18n="sort_name">Nombre</div>
+          <div class="chip" data-sort="id" data-i18n="sort_id">ID</div>
+        </div>
+      </div>
+      <div class="filter-block" id="system-block">
+        <div class="filter-label" data-i18n="system_filter">Sistema</div>
+        <div class="chips" id="system-chips"></div>
+      </div>
+      <div class="filter-block" id="region-block">
+        <div class="filter-label" data-i18n="region_filter">Región</div>
+        <div class="chips" id="region-chips"></div>
+      </div>
+      <div class="filter-block" id="lang-block">
+        <div class="filter-label" data-i18n="lang_filter">Idioma</div>
+        <div class="chips" id="lang-chips"></div>
+      </div>
+      <div class="filter-block" id="coll-block">
+        <div class="filter-label" data-i18n="collection_filter">Colección</div>
+        <div class="chips" id="coll-chips"></div>
+      </div>
+      <div class="filter-block" id="cat-block">
+        <div class="filter-label" data-i18n="category_filter">Categoría</div>
+        <div class="chips" id="cat-chips"></div>
+      </div>
+    </div>
+    <div class="filters-footer">
+      <button class="clear-btn-full" id="reset" data-i18n="reset_filters">Restablecer</button>
+      <button class="apply-btn" id="apply" data-i18n="apply_filters">Aplicar filtros</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div id="loading-text" data-i18n="loading">Cargando datos…</div>
+    <div class="load-progress"><div class="bar" id="load-bar" style="width:0%"></div></div>
+  </div>
+
+  <div id="error-box">
+    <h2 data-i18n="error_title">No se pudieron cargar los datos</h2>
+    <p id="error-msg"></p>
+    <p class="muted" data-i18n="error_hint">Este visor carga datos mediante fetch(). Si abriste el archivo directamente como file://, el navegador puede bloquear la petición por CORS. Súbelo a un servidor o usa un servidor local.</p>
+  </div>
+
+  <div class="result-info" id="info"></div>
+  <div id="list"></div>
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<button class="back-to-top" id="top" title="Subir">↑</button>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <h2 class="footer-title">📜 <span data-i18n="licenses">Licencias</span></h2>
+    <div class="license-block">
+      <h3 data-i18n="lic_datasets_title">📊 Datos · No-Intro Project</h3>
+      <p data-i18n="lic_datasets_body">Los metadatos de juegos mostrados en este visor provienen de los archivos DAT publicados por el No-Intro Project y se utilizan sin modificaciones.</p>
+      <p><code>No-Intro DAT files © The No-Intro Project.</code></p>
+      <p><a href="https://no-intro.org/" target="_blank" rel="noopener">no-intro.org</a></p>
+    </div>
+    <div class="license-block">
+      <h3 data-i18n="lic_code_title">💻 Código del visor</h3>
+      <p data-i18n="lic_code_body">El código HTML, CSS y JavaScript de este visor se distribuye bajo la licencia MIT. Eres libre de copiarlo, modificarlo y redistribuirlo, conservando el aviso de copyright original.</p>
+    </div>
+    <div class="footer-meta">
+      <div>
+        <span id="footer-system-count">0</span> <span data-i18n="systems">sistemas</span>
+        <span class="sep">·</span>
+        <span id="footer-game-count">0</span> <span data-i18n="games">juegos</span>
+        <span class="sep">·</span>
+        <span data-i18n="generated_on">generado el</span> <span id="footer-date">—</span>
+      </div>
+      <div>
+        © <span id="footer-year">2026</span> No-Intro DAT Viewer
+        <span class="sep">·</span>
+        <span data-i18n="made_by">Hecho por y para la comunidad</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="modal" id="modal-aviso">
+  <div class="modal-box" role="dialog" aria-modal="true">
+    <h2>ℹ️ <span data-i18n="legal_notice">Aviso legal</span></h2>
+    <p data-i18n="aviso_p1">No-Intro DAT Viewer es únicamente un visor de metadatos. No aloja, distribuye, enlaza ni facilita la descarga de ROMs, BIOS ni ningún otro tipo de software con derechos de autor.</p>
+    <p data-i18n="aviso_p2">Toda la información mostrada proviene de los archivos DAT publicados por el No-Intro Project y tiene carácter puramente informativo y de preservación digital.</p>
+    <p class="muted" data-i18n="aviso_p3">Este sitio no está afiliado, patrocinado ni respaldado por No-Intro, Nintendo, Sega, Sony, Microsoft ni por ningún titular de derechos de propiedad intelectual.</p>
+    <div class="modal-actions"><button class="modal-close" id="aviso-accept" data-i18n="accept">Aceptar</button></div>
+  </div>
+</div>
+
+<div class="modal" id="modal-descargo">
+  <div class="modal-box" role="dialog" aria-modal="true">
+    <h2>⚠️ <span data-i18n="disclaimer">Descargo de responsabilidad</span></h2>
+    <p data-i18n="desc_p1">El uso de este visor es bajo tu propio riesgo. El autor no se hace responsable del uso indebido de la información aquí mostrada.</p>
+    <p data-i18n="desc_p2">Cualquier decisión de descargar, poseer, ejecutar o compartir ROMs es responsabilidad exclusiva del usuario, quien debe cumplir con la legislación vigente en su país.</p>
+    <p data-i18n="desc_p3">Este visor no incluye, no genera y no gestiona ninguna ROM. Los enlaces o archivos a los que accedas desde fuera de este sitio son responsabilidad de terceros.</p>
+    <p class="muted" data-i18n="desc_p4">Todas las marcas registradas, logotipos y nombres comerciales mencionados pertenecen a sus respectivos propietarios.</p>
+    <div class="modal-actions"><button class="modal-close" data-close data-i18n="understood">Entendido</button></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   TRADUCCIONES INLINE (ES + EN)
+   ============================================================ */
+const I18N_INLINE = {
+  es: {
+    subtitle: 'Herramienta no oficial de la comunidad',
+    search_placeholder: 'Buscar juego, región, idioma, ID, CRC...',
+    filters: 'Filtros', merge_toggle: 'Unir juegos de distintas consolas',
+    collections_toggle: 'Modo colecciones',
+    view_mode: 'Vista', view_normal: 'Normal', view_collections: '📦 Colecciones',
+    sort_by: 'Ordenar por', sort_name: 'Nombre', sort_id: 'ID',
+    system_filter: 'Sistema', all_systems: 'Todos',
+    region_filter: 'Región', all_regions: 'Todas',
+    lang_filter: 'Idioma', all_langs: 'Todos',
+    collection_filter: 'Colección', all_collections: 'Todas',
+    category_filter: 'Categoría', all_categories: 'Todas',
+    apply_filters: 'Aplicar filtros', reset_filters: 'Restablecer',
+    more: 'Más', less: 'Menos',
+    loading: 'Cargando datos…', loading_console: 'Cargando',
+    error_title: 'No se pudieron cargar los datos',
+    error_hint: 'Este visor carga datos mediante fetch(). Si abriste el archivo directamente como file://, el navegador puede bloquear la petición por CORS. Súbelo a un servidor o usa un servidor local.',
+    games: 'juegos', systems: 'sistemas', consoles: 'consolas', collections: 'colecciones',
+    showing: 'Mostrando', of: 'de',
+    game_singular: 'juego', game_plural: 'juegos',
+    collection_singular: 'colección', collection_plural: 'colecciones',
+    no_results: 'Sin resultados 😕', variants: 'variantes', variant_singular: 'variante',
+    owned: 'En colección', merged_badge: 'Consolas unidas',
+    legal_notice: 'Aviso legal', disclaimer: 'Descargo de responsabilidad',
+    accept: 'Aceptar', understood: 'Entendido', licenses: 'Licencias',
+    lic_datasets_title: '📊 Datos · No-Intro Project',
+    lic_datasets_body: 'Los metadatos de juegos mostrados en este visor provienen de los archivos DAT publicados por el No-Intro Project y se utilizan sin modificaciones.',
+    lic_code_title: '💻 Código del visor',
+    lic_code_body: 'El código HTML, CSS y JavaScript de este visor se distribuye bajo la licencia MIT. Eres libre de copiarlo, modificarlo y redistribuirlo, conservando el aviso de copyright original.',
+    generated_on: 'generado el', made_by: 'Hecho por y para la comunidad',
+    aviso_p1: 'No-Intro DAT Viewer es únicamente un visor de metadatos. No aloja, distribuye, enlaza ni facilita la descarga de ROMs, BIOS ni ningún otro tipo de software con derechos de autor.',
+    aviso_p2: 'Toda la información mostrada proviene de los archivos DAT publicados por el No-Intro Project y tiene carácter puramente informativo y de preservación digital.',
+    aviso_p3: 'Este sitio no está afiliado, patrocinado ni respaldado por No-Intro, Nintendo, Sega, Sony, Microsoft ni por ningún titular de derechos de propiedad intelectual.',
+    desc_p1: 'El uso de este visor es bajo tu propio riesgo. El autor no se hace responsable del uso indebido de la información aquí mostrada.',
+    desc_p2: 'Cualquier decisión de descargar, poseer, ejecutar o compartir ROMs es responsabilidad exclusiva del usuario, quien debe cumplir con la legislación vigente en su país.',
+    desc_p3: 'Este visor no incluye, no genera y no gestiona ninguna ROM. Los enlaces o archivos a los que accedas desde fuera de este sitio son responsabilidad de terceros.',
+    desc_p4: 'Todas las marcas registradas, logotipos y nombres comerciales mencionados pertenecen a sus respectivos propietarios.',
+  },
+  en: {
+    subtitle: 'Unofficial community tool',
+    search_placeholder: 'Search game, region, language, ID, CRC...',
+    filters: 'Filters', merge_toggle: 'Merge games across consoles',
+    collections_toggle: 'Collections mode',
+    view_mode: 'View', view_normal: 'Normal', view_collections: '📦 Collections',
+    sort_by: 'Sort by', sort_name: 'Name', sort_id: 'ID',
+    system_filter: 'System', all_systems: 'All',
+    region_filter: 'Region', all_regions: 'All',
+    lang_filter: 'Language', all_langs: 'All',
+    collection_filter: 'Collection', all_collections: 'All',
+    category_filter: 'Category', all_categories: 'All',
+    apply_filters: 'Apply filters', reset_filters: 'Reset',
+    more: 'More', less: 'Less',
+    loading: 'Loading data…', loading_console: 'Loading',
+    error_title: 'Could not load data',
+    error_hint: 'This viewer loads data via fetch(). If you opened the file directly as file://, the browser may block the request due to CORS. Host it on a server or use a local server.',
+    games: 'games', systems: 'systems', consoles: 'consoles', collections: 'collections',
+    showing: 'Showing', of: 'of',
+    game_singular: 'game', game_plural: 'games',
+    collection_singular: 'collection', collection_plural: 'collections',
+    no_results: 'No results 😕', variants: 'variants', variant_singular: 'variant',
+    owned: 'In collection', merged_badge: 'Consoles merged',
+    legal_notice: 'Legal notice', disclaimer: 'Disclaimer',
+    accept: 'Accept', understood: 'Got it', licenses: 'Licenses',
+    lic_datasets_title: '📊 Data · No-Intro Project',
+    lic_datasets_body: 'Game metadata shown in this viewer comes from the DAT files published by the No-Intro Project and is used without modifications.',
+    lic_code_title: '💻 Viewer code',
+    lic_code_body: 'The HTML, CSS and JavaScript code of this viewer is distributed under the MIT license.',
+    generated_on: 'generated on', made_by: 'Made by and for the community',
+    aviso_p1: 'No-Intro DAT Viewer is only a metadata viewer. It does not host, distribute, link to, or facilitate the download of ROMs, BIOS, or any other copyrighted software.',
+    aviso_p2: 'All the information shown comes from the DAT files published by the No-Intro Project and is purely informational and for digital preservation purposes.',
+    aviso_p3: 'This site is not affiliated with, sponsored by, or endorsed by No-Intro, Nintendo, Sega, Sony, Microsoft, or any intellectual property rights holder.',
+    desc_p1: 'Use of this viewer is at your own risk. The author is not responsible for any misuse of the information shown here.',
+    desc_p2: 'Any decision to download, own, run or share ROMs is the sole responsibility of the user, who must comply with the laws in force in their country.',
+    desc_p3: 'This viewer does not include, generate, or manage any ROM. Links or files you access from outside this site are the responsibility of third parties.',
+    desc_p4: 'All trademarks, logos and trade names mentioned belong to their respective owners.',
+  },
+};
+
+let i18nExtra = null;
+let i18nExtraPromise = null;
+
+async function loadExtraI18n() {
+  if (i18nExtra) return i18nExtra;
+  if (i18nExtraPromise) return i18nExtraPromise;
+  i18nExtraPromise = fetch('data/i18n.json', { cache: 'force-cache' })
+    .then(r => r.ok ? r.json() : {})
+    .then(data => { i18nExtra = data; return data; })
+    .catch(() => ({}));
+  return i18nExtraPromise;
+}
+
+let currentLang = localStorage.getItem('nidv_lang') || 'es';
+function t(key) {
+  if (I18N_INLINE[currentLang] && I18N_INLINE[currentLang][key]) return I18N_INLINE[currentLang][key];
+  if (i18nExtra && i18nExtra[currentLang] && i18nExtra[currentLang][key]) return i18nExtra[currentLang][key];
+  return I18N_INLINE.en[key] || key;
+}
+
+async function applyStaticI18n() {
+  if (!I18N_INLINE[currentLang]) await loadExtraI18n();
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder'))); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
+  document.getElementById('ui-lang').value = currentLang;
+}
+
+/* ============================================================
+   MENÚ Y MODALES
+   ============================================================ */
+const menuBtn = document.getElementById('menu-btn');
+const menuDropdown = document.getElementById('menu-dropdown');
+menuBtn.addEventListener('click', (e) => { e.stopPropagation(); menuDropdown.classList.toggle('show'); });
+document.addEventListener('click', () => menuDropdown.classList.remove('show'));
+
+document.querySelectorAll('[data-modal]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-modal');
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('show');
+    menuDropdown.classList.remove('show');
+  });
+});
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
+  modal.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => modal.classList.remove('show')));
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+    menuDropdown.classList.remove('show');
+    if (filtersPanel.classList.contains('show')) closeFilters();
+  }
+});
+document.getElementById('aviso-accept').addEventListener('click', () => {
+  try { localStorage.setItem('nidv_legal_accepted', '1'); } catch (e) {}
+  document.getElementById('modal-aviso').classList.remove('show');
+});
+
+document.getElementById('ui-lang').addEventListener('change', async (e) => {
+  currentLang = e.target.value;
+  try { localStorage.setItem('nidv_lang', currentLang); } catch (e) {}
+  await applyStaticI18n();
+  if (games.length > 0) {
+    computeDraftAvailableChips();
+    renderAllChips();
+    render();
+    updateStats();
+  }
+});
+
+/* ============================================================
+   DATOS
+   ============================================================ */
+let games = [];
+let consoles = [];
+let families = [];
+let collections = {};
+let hasOwnedData = false;
+let ownedSet = new Set();
+let systemCount = {};
+let totalExpectedGames = 0;
+
+function key(g) { return g.console + '::' + g.id; }
+function cleanName(name) { return (name || '').replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim(); }
+function extractTags(name) {
+  const tags = [];
+  const re = /\(([^)]+)\)/g;
+  let m;
+  while ((m = re.exec(name)) !== null) {
+    const tag = m[1].trim();
+    if (tag) tags.push(tag);
+  }
+  return tags;
+}
+
+/* Colecciones — detección dinámica por patrones */
+const COLLECTION_EXCLUDE = new Set([
+  'virtual console', 'wii virtual console', 'wii u virtual console',
+  '3ds virtual console', 'wii and wii u virtual console',
+  'switch online', 'classic mini', 'evercade', 'nintendo classics',
+  'sega ages', 'sega channel', 'sega game toshokan', 'sega reactor',
+  'mega drive mini', 'mega drive mini 2', 'genesis mini', 'genesis mini 2',
+  'super mega drive 3', 'mega drive 4', 'mega drive playtv',
+  'nintendo gateway system', 'club nintendo', 'nintendo power mail-order',
+  'spaceworld 1997', 'e3 1997', 'e3 2003', 'e3 2005', 'e3 2011 demo',
+]);
+
+function isCollectionTag(raw) {
+  const k = normalizeTag(raw);
+  if (!k) return false;
+  if (COLLECTION_EXCLUDE.has(k)) return false;
+  if (/\bcollections?\b/i.test(k)) return true;
+  if (/\bmix\b/i.test(k)) return true;
+  if (/\banthology\b/i.test(k)) return true;
+  if (/\bcompilation\b/i.test(k)) return true;
+  if (/\bvol\.?\s*\d/i.test(k)) return true;
+  if (/\bvolume\s+(i|ii|iii|iv|v)\b/i.test(k)) return true;
+  if (/\barcade\s+garage\b/i.test(k)) return true;
+  if (/\bmuseum\b/i.test(k)) return true;
+  if (/\bsmash\s+pack\b/i.test(k)) return true;
+  if (/\bclassic\s+pak\b/i.test(k)) return true;
+  if (/\bclassic\s+series\b/i.test(k)) return true;
+  if (/^collection\s+of\b/i.test(k)) return true;
+  return false;
+}
+
+/* Idiomas inferidos por región */
+const REGION_LANG_MAP = {
+  'JPN': 'JA', 'USA': 'EN', 'CAN': 'EN', 'UK': 'EN', 'AUS': 'EN',
+  'ESP': 'ES', 'MEX': 'ES', 'ARG': 'ES', 'PER': 'ES',
+  'FRA': 'FR', 'GER': 'DE', 'ITA': 'IT', 'NLD': 'NL',
+  'SWE': 'SV', 'NOR': 'NO', 'DEN': 'DA', 'FIN': 'FI',
+  'POL': 'PL', 'RUS': 'RU', 'GRE': 'EL', 'KOR': 'KO',
+  'CHN': 'ZH-HANS', 'TWN': 'ZH-HANT', 'BRA': 'PT', 'HKG': 'ZH-HANT',
+};
+
+/* TAG_MAP */
+const TAG_MAP = {
+  'japan':{kind:'region',label:'JPN',color:'region'},'usa':{kind:'region',label:'USA',color:'region'},
+  'europe':{kind:'region',label:'EUR',color:'region'},'world':{kind:'region',label:'WLD',color:'region'},
+  'asia':{kind:'region',label:'ASI',color:'region'},'germany':{kind:'region',label:'GER',color:'region'},
+  'france':{kind:'region',label:'FRA',color:'region'},'spain':{kind:'region',label:'ESP',color:'region'},
+  'italy':{kind:'region',label:'ITA',color:'region'},'united kingdom':{kind:'region',label:'UK',color:'region'},
+  'netherlands':{kind:'region',label:'NLD',color:'region'},'sweden':{kind:'region',label:'SWE',color:'region'},
+  'norway':{kind:'region',label:'NOR',color:'region'},'denmark':{kind:'region',label:'DEN',color:'region'},
+  'finland':{kind:'region',label:'FIN',color:'region'},'poland':{kind:'region',label:'POL',color:'region'},
+  'russia':{kind:'region',label:'RUS',color:'region'},'greece':{kind:'region',label:'GRE',color:'region'},
+  'canada':{kind:'region',label:'CAN',color:'region'},'mexico':{kind:'region',label:'MEX',color:'region'},
+  'brazil':{kind:'region',label:'BRA',color:'region'},'argentina':{kind:'region',label:'ARG',color:'region'},
+  'peru':{kind:'region',label:'PER',color:'region'},'australia':{kind:'region',label:'AUS',color:'region'},
+  'korea':{kind:'region',label:'KOR',color:'region'},'hong kong':{kind:'region',label:'HKG',color:'region'},
+  'taiwan':{kind:'region',label:'TWN',color:'region'},'china':{kind:'region',label:'CHN',color:'region'},
+  'india':{kind:'region',label:'IND',color:'region'},'scandinavia':{kind:'region',label:'SCA',color:'region'},
+  'unknown':{kind:'region',label:'UNK',color:'region'},
+
+  'en':{kind:'lang',label:'EN',color:'lang'},'ja':{kind:'lang',label:'JA',color:'lang'},
+  'es':{kind:'lang',label:'ES',color:'lang'},'fr':{kind:'lang',label:'FR',color:'lang'},
+  'de':{kind:'lang',label:'DE',color:'lang'},'it':{kind:'lang',label:'IT',color:'lang'},
+  'pt':{kind:'lang',label:'PT',color:'lang'},'ko':{kind:'lang',label:'KO',color:'lang'},
+  'nl':{kind:'lang',label:'NL',color:'lang'},'sv':{kind:'lang',label:'SV',color:'lang'},
+  'no':{kind:'lang',label:'NO',color:'lang'},'da':{kind:'lang',label:'DA',color:'lang'},
+  'fi':{kind:'lang',label:'FI',color:'lang'},'pl':{kind:'lang',label:'PL',color:'lang'},
+  'cs':{kind:'lang',label:'CS',color:'lang'},'hu':{kind:'lang',label:'HU',color:'lang'},
+  'ru':{kind:'lang',label:'RU',color:'lang'},'el':{kind:'lang',label:'EL',color:'lang'},
+  'tr':{kind:'lang',label:'TR',color:'lang'},'ar':{kind:'lang',label:'AR',color:'lang'},
+  'zh':{kind:'lang',label:'ZH',color:'lang'},'tw':{kind:'lang',label:'TW',color:'lang'},
+  'ca':{kind:'lang',label:'CA',color:'lang'},'zh-hans':{kind:'lang',label:'ZH-HANS',color:'lang'},
+  'zh-hant':{kind:'lang',label:'ZH-HANT',color:'lang'},'en-us':{kind:'lang',label:'EN-US',color:'lang'},
+  'en-gb':{kind:'lang',label:'EN-GB',color:'lang'},'pt-br':{kind:'lang',label:'PT-BR',color:'lang'},
+  'fr-ca':{kind:'lang',label:'FR-CA',color:'lang'},'es-xl':{kind:'lang',label:'ES-XL',color:'lang'},
+
+  'beta':{kind:'variant',label:'BETA',color:'variant'},'proto':{kind:'variant',label:'PROTO',color:'variant'},
+  'possible proto':{kind:'variant',label:'PROTO?',color:'variant'},'rev':{kind:'variant',label:'REV',color:'variant'},
+  'demo':{kind:'variant',label:'DEMO',color:'variant'},'sample':{kind:'variant',label:'SAMPLE',color:'variant'},
+  'promo':{kind:'variant',label:'PROMO',color:'variant'},'arcade':{kind:'variant',label:'ARCADE',color:'variant'},
+  'auto demo':{kind:'variant',label:'AUTO DEMO',color:'variant'},'tech demo':{kind:'variant',label:'TECH DEMO',color:'variant'},
+  'debug':{kind:'variant',label:'DEBUG',color:'variant'},'competition cart':{kind:'variant',label:'COMPETITION',color:'variant'},
+  'kiosk':{kind:'variant',label:'KIOSK',color:'variant'},'wi-fi kiosk':{kind:'variant',label:'WIFI KIOSK',color:'variant'},
+  'test program':{kind:'variant',label:'TEST PROG',color:'variant'},'test drive':{kind:'variant',label:'TEST DRIVE',color:'variant'},
+  'all unlocked':{kind:'variant',label:'ALL UNLOCKED',color:'variant'},'earlier':{kind:'variant',label:'EARLIER',color:'variant'},
+  'shindou edition':{kind:'variant',label:'SHINDOU',color:'variant'},'final version':{kind:'variant',label:'FINAL',color:'variant'},
+  'final cut':{kind:'variant',label:'FINAL CUT',color:'variant'},'special version':{kind:'variant',label:'SPECIAL',color:'variant'},
+
+  'unl':{kind:'license',label:'UNL',color:'license'},'pirate':{kind:'license',label:'PIRATE',color:'license'},
+  'np':{kind:'license',label:'NP',color:'license'},'alt':{kind:'license',label:'ALT',color:'license'},
+
+  'virtual console':{kind:'edition',label:'VC',color:'edition'},
+  'wii virtual console':{kind:'edition',label:'WII VC',color:'edition'},
+  'wii u virtual console':{kind:'edition',label:'WIIU VC',color:'edition'},
+  '3ds virtual console':{kind:'edition',label:'3DS VC',color:'edition'},
+  'wii and wii u virtual console':{kind:'edition',label:'WII/WIIU VC',color:'edition'},
+  'switch online':{kind:'edition',label:'NSO',color:'edition'},
+  'switch':{kind:'edition',label:'SWITCH',color:'edition'},
+  'classic mini':{kind:'edition',label:'MINI',color:'edition'},
+  'evercade':{kind:'edition',label:'EVERCADE',color:'edition'},
+  'steam':{kind:'edition',label:'STEAM',color:'edition'},
+  'gog':{kind:'edition',label:'GOG',color:'edition'},
+  'wii u':{kind:'edition',label:'WIIU',color:'edition'},
+  'gamecube':{kind:'edition',label:'GC',color:'edition'},
+  'battle.net':{kind:'edition',label:'BATTLENET',color:'edition'},
+  'capcom town':{kind:'edition',label:'CAPCOM TOWN',color:'edition'},
+  'sega channel':{kind:'edition',label:'SEGA CH',color:'edition'},
+  'sega ages':{kind:'edition',label:'SEGA AGES',color:'edition'},
+  'sega game toshokan':{kind:'edition',label:'TOSHOKAN',color:'edition'},
+  'sega reactor':{kind:'edition',label:'REACTOR',color:'edition'},
+  'sega smash pack':{kind:'edition',label:'SMASH PACK',color:'edition'},
+  'sega smash pack 2':{kind:'edition',label:'SMASH PACK 2',color:'edition'},
+  'sega classic collection':{kind:'edition',label:'SEGA CL',color:'edition'},
+  'sega classic':{kind:'edition',label:'SEGA CLASSIC',color:'edition'},
+  'mega drive mini':{kind:'edition',label:'MD MINI',color:'edition'},
+  'mega drive mini 2':{kind:'edition',label:'MD MINI 2',color:'edition'},
+  'genesis mini':{kind:'edition',label:'GEN MINI',color:'edition'},
+  'genesis mini 2':{kind:'edition',label:'GEN MINI 2',color:'edition'},
+  'mega drive 4':{kind:'edition',label:'MD 4',color:'edition'},
+  'super mega drive 3':{kind:'edition',label:'SMD 3',color:'edition'},
+  'namco':{kind:'edition',label:'NAMCO',color:'edition'},
+  'lodgenet':{kind:'edition',label:'LODGENET',color:'edition'},
+  "datel games n' music":{kind:'edition',label:'DATEL',color:'edition'},
+  'family basic':{kind:'edition',label:'BASIC',color:'edition'},
+  'animal crossing':{kind:'edition',label:'ANIMAL X',color:'edition'},
+  'netcard':{kind:'edition',label:'NETCARD',color:'edition'},
+  'tengen':{kind:'edition',label:'TENGEN',color:'edition'},
+  'e-reader':{kind:'edition',label:'E-READER',color:'edition'},
+  'famicombox':{kind:'edition',label:'FBOX',color:'edition'},
+  'famicomstation':{kind:'edition',label:'FSTATION',color:'edition'},
+  'famicom 3d system':{kind:'edition',label:'FAMICOM 3D',color:'edition'},
+  'retro-bit':{kind:'edition',label:'RETROBIT',color:'edition'},
+  'retrozone':{kind:'edition',label:'RETROZONE',color:'edition'},
+  'iam8bit':{kind:'edition',label:'IAM8BIT',color:'edition'},
+  'red art games':{kind:'edition',label:'RED ART',color:'edition'},
+  'limited run games':{kind:'edition',label:'LRG',color:'edition'},
+  'strictly limited games':{kind:'edition',label:'SLG',color:'edition'},
+  'super fighter team':{kind:'edition',label:'SFT',color:'edition'},
+  'piko interactive':{kind:'edition',label:'PIKO',color:'edition'},
+  'qubyte classics':{kind:'edition',label:'QUBYTE',color:'edition'},
+  'ratalaika games':{kind:'edition',label:'RATALAIKA',color:'edition'},
+  'the retro room':{kind:'edition',label:'RETRO ROOM',color:'edition'},
+  'columbus circle':{kind:'edition',label:'COLUMBUS',color:'edition'},
+  'second dimension':{kind:'edition',label:'2D',color:'edition'},
+  'rcg translation':{kind:'edition',label:'RCG',color:'edition'},
+  'original translation':{kind:'edition',label:'TRAD ORIG',color:'edition'},
+  'nintendo gateway system':{kind:'edition',label:'NGS',color:'edition'},
+  'club nintendo':{kind:'edition',label:'CLUB NINTENDO',color:'edition'},
+  'nintendo power mail-order':{kind:'edition',label:'NP MAIL',color:'edition'},
+  'nintendo classics':{kind:'edition',label:'NINTENDO CLASSICS',color:'edition'},
+  'jr nishi-nihon presents':{kind:'edition',label:'JR NISHI',color:'edition'},
+  'activision':{kind:'edition',label:'ACTIVISION',color:'edition'},
+  'videogames':{kind:'edition',label:'VIDEOGAMES',color:'edition'},
+  'program':{kind:'edition',label:'PROGRAM',color:'edition'},
+  'developer card':{kind:'edition',label:'DEV CARD',color:'edition'},
+  'hacker':{kind:'edition',label:'HACKER',color:'edition'},
+  'hummer team':{kind:'edition',label:'HUMMER',color:'edition'},
+  'imagineer':{kind:'edition',label:'IMAGINEER',color:'edition'},
+  'ie institute':{kind:'edition',label:'IE INST',color:'edition'},
+  'subor keyboard':{kind:'edition',label:'SUBOR',color:'edition'},
+  'subor':{kind:'edition',label:'SUBOR',color:'edition'},
+  'j-cart':{kind:'edition',label:'J-CART',color:'edition'},
+  'datach':{kind:'edition',label:'DATACH',color:'edition'},
+  'waixing':{kind:'edition',label:'WAIXING',color:'edition'},
+  'aladdin compact cartridge':{kind:'edition',label:'ALADDIN',color:'edition'},
+  'nina-06':{kind:'edition',label:'NINA-06',color:'edition'},
+  'nina-03':{kind:'edition',label:'NINA-03',color:'edition'},
+  'c&e':{kind:'edition',label:'C&E',color:'edition'},
+  'jaleco':{kind:'edition',label:'JALECO',color:'edition'},
+  'konami':{kind:'edition',label:'KONAMI',color:'edition'},
+  'hengge':{kind:'edition',label:'HENGGE',color:'edition'},
+  'digital':{kind:'edition',label:'DIGITAL',color:'edition'},
+  'bullet-proof':{kind:'edition',label:'BULLET',color:'edition'},
+  'ntdec':{kind:'edition',label:'NTDEC',color:'edition'},
+  'coolboy':{kind:'edition',label:'COOLBOY',color:'edition'},
+  'tkrom':{kind:'edition',label:'TKROM',color:'edition'},
+  'majesco':{kind:'edition',label:'MAJESCO',color:'edition'},
+  'vivendi':{kind:'edition',label:'VIVENDI',color:'edition'},
+  'dsi':{kind:'edition',label:'DSI',color:'edition'},
+  'acclaim':{kind:'edition',label:'ACCLAIM',color:'edition'},
+  'sunsoft':{kind:'edition',label:'SUNSOFT',color:'edition'},
+  'hudson':{kind:'edition',label:'HUDSON',color:'edition'},
+  'bit corp.':{kind:'edition',label:'BIT CORP',color:'edition'},
+  'taito':{kind:'edition',label:'TAITO',color:'edition'},
+  'hal laboratory':{kind:'edition',label:'HAL',color:'edition'},
+  'bensheng':{kind:'edition',label:'BENSHENG',color:'edition'},
+  'jncota':{kind:'edition',label:'JNCOTA',color:'edition'},
+  'electronica':{kind:'edition',label:'ELECTRONICA',color:'edition'},
+  'snake':{kind:'edition',label:'SNAKE',color:'edition'},
+  'xianfeng':{kind:'edition',label:'XIANFENG',color:'edition'},
+  'radica':{kind:'edition',label:'RADICA',color:'edition'},
+  'sachen':{kind:'edition',label:'SACHEN',color:'edition'},
+  'sachen-commin':{kind:'edition',label:'SACHEN',color:'edition'},
+  'idea-tek':{kind:'edition',label:'IDEA-TEK',color:'edition'},
+  'ka sheng':{kind:'edition',label:'KA SHENG',color:'edition'},
+  'ocean':{kind:'edition',label:'OCEAN',color:'edition'},
+  'ravensburger':{kind:'edition',label:'RAVENS',color:'edition'},
+  'thq':{kind:'edition',label:'THQ',color:'edition'},
+  'super mega':{kind:'edition',label:'SUPER MEGA',color:'edition'},
+  'incube8 games':{kind:'edition',label:'INCUBE8',color:'edition'},
+  'project egg':{kind:'edition',label:'EGG',color:'edition'},
+  'presence of mind \'98':{kind:'edition',label:'POM98',color:'edition'},
+  'heartbeat catalyst':{kind:'edition',label:'HBC',color:'edition'},
+  'little orbit':{kind:'edition',label:'LITTLE ORBIT',color:'edition'},
+  'toys\'r\'us':{kind:'edition',label:'TRU',color:'edition'},
+  'toys\'r\'us exclusive':{kind:'edition',label:'TRU XCL',color:'edition'},
+  'target exclusive':{kind:'edition',label:'TARGET XCL',color:'edition'},
+  'walmart exclusive':{kind:'edition',label:'WALMART XCL',color:'edition'},
+  'best buy exclusive':{kind:'edition',label:'BESTBUY XCL',color:'edition'},
+  'walmart edition':{kind:'edition',label:'WALMART ED',color:'edition'},
+  'collector\'s edition':{kind:'edition',label:'COLLECTOR',color:'edition'},
+  'premium edition':{kind:'edition',label:'PREMIUM',color:'edition'},
+  'original game sound edition':{kind:'edition',label:'OG SOUND',color:'edition'},
+  'value price':{kind:'edition',label:'VALUE PRICE',color:'edition'},
+  'climax':{kind:'edition',label:'CLIMAX',color:'edition'},
+  'climax entertainment':{kind:'edition',label:'CLIMAX',color:'edition'},
+  'video':{kind:'edition',label:'VIDEO',color:'edition'},
+  'age of empires':{kind:'edition',label:'AOE',color:'edition'},
+  'gargoyles remastered':{kind:'edition',label:'GARGOYLES R',color:'edition'},
+  'blockbuster flash rom':{kind:'edition',label:'BLOCKBUSTER',color:'edition'},
+  'players':{kind:'edition',label:'PLAYERS',color:'edition'},
+  'mega drive playtv':{kind:'edition',label:'PLAYTV',color:'edition'},
+  'nhl 06':{kind:'edition',label:'NHL 06',color:'edition'},
+  'power play':{kind:'edition',label:'POWER PLAY',color:'edition'},
+  'fun play':{kind:'edition',label:'FUN PLAY',color:'edition'},
+  'megafun':{kind:'edition',label:'MEGAFUN',color:'edition'},
+  'super games':{kind:'edition',label:'SUPER GAMES',color:'edition'},
+  'hes':{kind:'edition',label:'HES',color:'edition'},
+  'c 64 games system':{kind:'edition',label:'C64GS',color:'edition'},
+  '35th anniversary game & watch':{kind:'edition',label:'G&W 35TH',color:'edition'},
+  'launch cart':{kind:'edition',label:'LAUNCH CART',color:'edition'},
+  '2k':{kind:'edition',label:'2K',color:'edition'},
+  'romi-soft':{kind:'edition',label:'ROMI',color:'edition'},
+  'barver battle saga':{kind:'edition',label:'BARVER',color:'edition'},
+  'mega 6':{kind:'edition',label:'MEGA 6',color:'edition'},
+  'arcade audio':{kind:'edition',label:'ARCADE AUDIO',color:'edition'},
+  'star fox - assault':{kind:'edition',label:'SF ASSAULT',color:'edition'},
+  '72 pin cart':{kind:'edition',label:'72 PIN',color:'edition'},
+  '60 pin cart':{kind:'edition',label:'60 PIN',color:'edition'},
+  'plug-thru':{kind:'edition',label:'PLUG-THRU',color:'edition'},
+  'supervision':{kind:'edition',label:'SVISION',color:'edition'},
+
+  'sgb enhanced':{kind:'feature',label:'SGB',color:'feature'},
+  'gb compatible':{kind:'feature',label:'GB',color:'feature'},
+  'cgb+sgb enhanced':{kind:'feature',label:'CGB+SGB',color:'feature'},
+  'gba enhanced':{kind:'feature',label:'GBA',color:'feature'},
+  'ndsi enhanced':{kind:'feature',label:'NDSi',color:'feature'},
+  'enhancement chip':{kind:'feature',label:'CHIP',color:'feature'},
+  'rumble version':{kind:'feature',label:'RUMBLE',color:'feature'},
+};
+
+const GROUP_ORDER = {
+  'REV':1,'BETA':2,'PROTO':3,'PROTO?':4,'DEMO':5,'SAMPLE':6,'KIOSK':7,'WIFI KIOSK':8,
+  'PROMO':9,'ARCADE':10,'AUTO DEMO':11,'TECH DEMO':12,'DEBUG':13,'COMPETITION':14,
+  'TEST PROG':15,'ALL UNLOCKED':16,'EARLIER':17,'SHINDOU':18,'FINAL':19,'FINAL CUT':20,
+  'SPECIAL':21,'TEST DRIVE':22,'UNL':30,'PIRATE':31,'NP':32,'ALT':33,
+};
+
+function normalizeTag(t) { return String(t || '').trim().toLowerCase(); }
+function splitByComma(tag) { return String(tag || '').split(',').map(s => s.trim()).filter(Boolean); }
+
+function isMeaningfulTag(raw) {
+  const s = String(raw).trim();
+  if (!s) return false;
+  if (/^\d{4}(-\d{2})?(-\d{2})?$/.test(s)) return false;
+  if (/^\d{4}-\d{2}-\d{2}T\d+$/.test(s)) return false;
+  if (/^\d{4}-\d{2}-\d{2} \d+-\d+-\d+$/.test(s)) return false;
+  if (/^\d{4}-\d{2}-\d{2} \d+:\d+:\d+$/.test(s)) return false;
+  if (/^\d+$/.test(s)) return false;
+  if (/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[,\s]+\d{2,4}$/i.test(s)) return false;
+  if (!/\s/.test(s) && s.length <= 10 && /^[A-Z0-9\-_.]+$/.test(s) && /\d/.test(s) && !/^[A-Z]+\d+$/.test(s)) return false;
+  if (/^[A-Z]{1,3}[-\s]?\d+[A-Z]?$/i.test(s) && s.length <= 8) return false;
+  if (/^v[\d.]+[a-z]?$/i.test(s)) return false;
+  if (/^Ver\.?\s*[\d.]+/i.test(s)) return false;
+  if (/^DV\s+\d+$/i.test(s)) return false;
+  if (/^(trunk|branches-)/i.test(s)) return false;
+  if (/^Level\s+\d+/i.test(s)) return false;
+  if (/^Part\s+(One|Two|Three|Four|[A-Z])$/i.test(s)) return false;
+  if (/^Disk\s+\d+$/i.test(s)) return false;
+  if (/^DV\s+[\d,\s]+$/.test(s)) return false;
+  if (/^\d{4}\.\d+$/.test(s)) return false;
+  if (/^Ver\s+[\d.]+$/i.test(s)) return false;
+  if (/^\d+[A-Z]?$/.test(s)) return false;
+  if (/^\d+\s+(characters?|people|fighters)$/i.test(s)) return false;
+  if (s.length <= 2) return false;
+  return true;
+}
+
+function classifyTagPart(part) {
+  const k = normalizeTag(part);
+  if (!k) return null;
+  if (TAG_MAP[k]) return { ...TAG_MAP[k], raw: part, suffix: '' };
+  const m = k.match(/^(.+?)\s+(\d+|[a-z])$/);
+  if (m) {
+    const base = m[1].trim();
+    if (TAG_MAP[base]) return { ...TAG_MAP[base], raw: part, suffix: m[2] };
+    if (isMeaningfulTag(base)) return { kind:'variant', label:base.toUpperCase(), color:'variant', raw:part, suffix:m[2], unmapped:true };
+    return null;
+  }
+  if (/^v[\d.]+[a-z]?$/i.test(k)) return { kind:'variant', label:k.toUpperCase(), color:'variant', raw:part, suffix:'' };
+  if (!isMeaningfulTag(part)) return null;
+  return { kind:'other', label:part.toUpperCase(), color:'unknown', raw:part, suffix:'', unmapped:true };
+}
+
+function classifyGameTags(tags) {
+  const r = { regions:[], langs:[], variants:[], licenses:[], editions:[], features:[], collections:[], others:[] };
+  tags.forEach(rawTag => {
+    splitByComma(rawTag).forEach(part => {
+      const cls = classifyTagPart(part);
+      if (!cls) return;
+      if (isCollectionTag(part)) {
+        r.collections.push({ kind:'collection', label:cls.label, color:'collection', raw:part, suffix:cls.suffix || '', isCollection:true });
+        return;
+      }
+      switch (cls.kind) {
+        case 'region': r.regions.push(cls); break;
+        case 'lang': r.langs.push(cls); break;
+        case 'variant': r.variants.push(cls); break;
+        case 'license': r.licenses.push(cls); break;
+        case 'edition': r.editions.push(cls); break;
+        case 'feature': r.features.push(cls); break;
+        default: r.others.push(cls);
+      }
+    });
+  });
+  return r;
+}
+
+function computeLangs(g) {
+  const explicit = g._langsExplicit || [];
+  let inferred = [];
+  if (explicit.length === 0 && g._regions.length > 0) {
+    const seen = new Set();
+    g._regions.forEach(r => {
+      const il = REGION_LANG_MAP[r.label];
+      if (il && !seen.has(il)) {
+        seen.add(il);
+        inferred.push({ kind:'lang', label:il, color:'lang', raw:il, suffix:'', inferred:true });
+      }
+    });
+  }
+  g._langs = explicit.concat(inferred);
+  g._langsInferred = inferred;
+}
+
+function primaryGroup(g) {
+  if (g._variants.length > 0) return { kind:'variant', label:g._variants[0].label, color:'variant' };
+  if (g._licenses.length > 0) return { kind:'license', label:g._licenses[0].label, color:'license' };
+  if (g._editions.length > 0) return { kind:'edition', label:g._editions[0].label, color:'edition' };
+  if (g._features.length > 0) return { kind:'feature', label:g._features[0].label, color:'feature' };
+  if (g._others.length   > 0) return { kind:'other',   label:g._others[0].label,   color:'other' };
+  return { kind:'other', label:'BASE', color:'other' };
+}
+
+function enrichGame(g) {
+  g._cleanName = cleanName(g.name) || g.name || g.rom;
+  g._rawTags   = extractTags(g.name);
+  const cls    = classifyGameTags(g._rawTags);
+  g._regions       = cls.regions;
+  g._langsExplicit = cls.langs;
+  g._variants      = cls.variants;
+  g._licenses      = cls.licenses;
+  g._editions      = cls.editions;
+  g._features      = cls.features;
+  g._collections   = cls.collections;
+  g._others        = cls.others;
+  g._primaryRegion = cls.regions.length > 0 ? cls.regions[0].raw : '(Sin región)';
+  computeLangs(g);
+  g._primaryGroup  = primaryGroup(g);
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+const state = {
+  q: '', page: 1, perPage: 50, sort: 'name',
+  system: '', region: '', lang: '', cat: '', coll: '',
+  draft: { system: '', region: '', lang: '', cat: '', coll: '' },
+  expanded: { system: false, region: false, lang: false, coll: false, cat: false },
+  viewMode: localStorage.getItem('nidv_view') || 'normal',
+  mergeConsoles: localStorage.getItem('nidv_merge') === '1',
+  openFamily: null,
+  openMembers: new Set(),
+};
+function resetOpen() { state.openFamily = null; state.openMembers.clear(); }
+
+let draftAvailable = { system:[], region:[], lang:[], cat:[], coll:[] };
+let draftCounts = { system:{}, region:{}, lang:{}, cat:{}, coll:{} };
+
+/* ============================================================
+   DOM refs
+   ============================================================ */
+const statsEl        = document.getElementById('stats');
+const searchEl       = document.getElementById('search');
+const clearEl        = document.getElementById('clear');
+const catChipsEl     = document.getElementById('cat-chips');
+const regionChipsEl  = document.getElementById('region-chips');
+const langChipsEl    = document.getElementById('lang-chips');
+const collChipsEl    = document.getElementById('coll-chips');
+const systemChipsEl  = document.getElementById('system-chips');
+const sortChipsEl    = document.getElementById('sort-chips');
+const viewChipsEl    = document.getElementById('view-chips');
+const listEl         = document.getElementById('list');
+const infoEl         = document.getElementById('info');
+const paginationEl   = document.getElementById('pagination');
+const topBtn         = document.getElementById('top');
+const themeBtn       = document.getElementById('theme');
+const filtersBtn     = document.getElementById('filters-toggle');
+const filtersPanel   = document.getElementById('filters-panel');
+const filtersBadge   = document.getElementById('filters-badge');
+const resetBtn       = document.getElementById('reset');
+const applyBtn       = document.getElementById('apply');
+const mergeBtn       = document.getElementById('merge-btn');
+const collectionsBtn = document.getElementById('collections-toggle');
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtSize(b) {
+  if (b >= 1024 * 1024) return (b / 1024 / 1024).toFixed(1) + ' MB';
+  if (b >= 1024) return (b / 1024).toFixed(1) + ' KB';
+  return b + ' B';
+}
+function setRegionWidth() {
+  let maxLen = 0;
+  games.forEach(g => { g._regions.forEach(r => { if (r.label.length > maxLen) maxLen = r.label.length; }); });
+  maxLen = Math.max(maxLen, 5);
+  document.documentElement.style.setProperty('--region-min', maxLen + 'ch');
+}
+function cmpId(a, b) {
+  if (a.console !== b.console) return a.console.localeCompare(b.console);
+  const ai = parseInt(a.id, 10), bi = parseInt(b.id, 10);
+  if (!isNaN(ai) && !isNaN(bi) && ai !== bi) return ai - bi;
+  return (a.id || '').localeCompare(b.id || '');
+}
+function cmpName(a, b) { return (a._cleanName || '').localeCompare(b._cleanName || '', undefined, { sensitivity:'base' }); }
+function cmpIdNum(a, b) { const ia = parseInt(a.id, 10) || 0, ib = parseInt(b.id, 10) || 0; return ia - ib; }
+
+/* ============================================================
+   FAMILIAS Y COLECCIONES
+   ============================================================ */
+function buildFamilies(mergeByConsole) {
+  const byId = {};
+  games.forEach(g => { byId[key(g)] = g; });
+  const grouped = {};
+  if (mergeByConsole) {
+    games.forEach(g => {
+      const k = g._cleanName.toLowerCase();
+      if (!grouped[k]) grouped[k] = [];
+      grouped[k].push(g);
+    });
+  } else {
+    const officialParent = {};
+    games.forEach(g => {
+      const hasParent = g.cloneofid && byId[g.console + '::' + g.cloneofid];
+      officialParent[key(g)] = hasParent ? (g.console + '::' + g.cloneofid) : null;
+    });
+    const orphansByName = {};
+    games.forEach(g => {
+      if (officialParent[key(g)]) return;
+      const k = g.console + '::' + g._cleanName.toLowerCase();
+      if (!orphansByName[k]) orphansByName[k] = [];
+      orphansByName[k].push(key(g));
+    });
+    const syntheticParent = {};
+    Object.values(orphansByName).forEach(group => {
+      if (group.length <= 1) return;
+      group.sort((a, b) => cmpIdNum(byId[a], byId[b]));
+      const parentK = group[0];
+      group.forEach(k => { syntheticParent[k] = parentK; });
+    });
+    const keyToParent = {};
+    games.forEach(g => {
+      const k = key(g);
+      keyToParent[k] = officialParent[k] || syntheticParent[k] || k;
+    });
+    games.forEach(g => {
+      const pk = keyToParent[key(g)];
+      if (!grouped[pk]) grouped[pk] = [];
+      grouped[pk].push(g);
+    });
+  }
+  const result = [];
+  Object.entries(grouped).forEach(([fk, members]) => {
+    members.sort((a, b) => a.console !== b.console ? a.console.localeCompare(b.console) : cmpIdNum(a, b));
+    const parent = members[0];
+    const variants = members.slice(1);
+    const consolesSet = [...new Set(members.map(g => g.console))].sort();
+    const byRegion = {};
+    members.forEach(g => {
+      const r = g._primaryRegion;
+      if (!byRegion[r]) byRegion[r] = { games: [] };
+      byRegion[r].games.push(g);
+    });
+    Object.values(byRegion).forEach(grp => grp.games.sort(cmpIdNum));
+    const parts = [];
+    members.forEach(g => {
+      parts.push(g.name, g._cleanName, g.rom, g.id, g.crc, g.console, g._rawTags.join(' '));
+      g.cats.forEach(c => parts.push(c));
+    });
+    parts.push(parent._cleanName);
+    result.push({
+      parent, variants, _byRegion: byRegion, _allMembers: members,
+      _consoles: consolesSet, _merged: mergeByConsole,
+      _hay: parts.join(' ').toLowerCase(), _anyOwned: false,
+    });
+  });
+  if (hasOwnedData) {
+    result.forEach(fam => {
+      for (const g of fam._allMembers) {
+        if (ownedSet.has(key(g))) { fam._anyOwned = true; break; }
+      }
+    });
+  }
+  return result;
+}
+
+function buildCollections() {
+  const map = {};
+  games.forEach(g => {
+    g._collections.forEach(c => {
+      if (!map[c.label]) map[c.label] = { name: c.label, games: [] };
+      map[c.label].games.push(g);
+    });
+  });
+  Object.values(map).forEach(c => {
+    c.games.sort((a, b) => a.console !== b.console ? a.console.localeCompare(b.console) : cmpName(a, b));
+  });
+  return map;
+}
+
+function rebuildIndexes() {
+  setRegionWidth();
+  families = buildFamilies(state.mergeConsoles);
+  collections = buildCollections();
+  systemCount = {};
+  games.forEach(g => systemCount[g.console] = (systemCount[g.console] || 0) + 1);
+  if (consoles.length > 1) mergeBtn.classList.remove('hidden');
+  if (Object.keys(collections).length > 0) collectionsBtn.classList.remove('hidden');
+  updateStats();
+}
+
+function updateStats() {
+  const stats = [
+    '<div class="stat"><b>' + families.length + '</b> ' + t('games') + '</div>',
+    '<div class="stat"><b>' + consoles.length + '</b> ' + t('systems') + '</div>',
+  ];
+  if (Object.keys(collections).length > 0) {
+    stats.push('<div class="stat"><b>' + Object.keys(collections).length + '</b> ' + t('collections') + '</div>');
+  }
+  statsEl.innerHTML = stats.join('');
+  document.getElementById('footer-system-count').textContent = consoles.length;
+  document.getElementById('footer-game-count').textContent = families.length;
+}
+
+function updateViewChips() {
+  viewChipsEl.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.view === state.viewMode));
+}
+
+function updateFiltersBadge() {
+  const n = ['system','region','lang','cat','coll'].filter(k => state[k]).length;
+  filtersBadge.textContent = n;
+  filtersBadge.classList.toggle('has', n > 0);
+}
+
+/* ============================================================
+   CARGA DE DATOS
+   ============================================================ */
+async function loadAllData() {
+  const loadingText = document.getElementById('loading-text');
+  const loadBar = document.getElementById('load-bar');
+
+  loadingText.textContent = t('loading');
+  const indexRes = await fetch('data/index.json', { cache: 'no-cache' });
+  if (!indexRes.ok) throw new Error('HTTP ' + indexRes.status + ' (index.json)');
+  const indexData = await indexRes.json();
+  consoles = indexData.consoles.map(c => c.name);
+  totalExpectedGames = indexData.total_games || 0;
+
+  const ownedList = indexData.owned || [];
+  hasOwnedData = ownedList.length > 0;
+  ownedSet = new Set(ownedList.map(String));
+
+  const consoleList = indexData.consoles;
+  let loaded = 0;
+  const total = consoleList.length;
+
+  const promises = consoleList.map(async (c) => {
+    try {
+      const r = await fetch('data/consoles/' + c.id + '.json', { cache: 'force-cache' });
+      if (!r.ok) return null;
+      const data = await r.json();
+      return data.games || [];
+    } catch (e) { return null; }
+    finally {
+      loaded++;
+      loadBar.style.width = Math.round((loaded / total) * 100) + '%';
+      loadingText.textContent = t('loading_console') + '… ' + loaded + ' / ' + total;
+    }
+  });
+
+  const results = await Promise.all(promises);
+
+  /* Deduplicación defensiva por console::id */
+  const seenKeys = new Set();
+  let dupCount = 0;
+  results.forEach(arr => {
+    if (!arr) return;
+    arr.forEach(g => {
+      const k = key(g);
+      if (seenKeys.has(k)) { dupCount++; return; }
+      seenKeys.add(k);
+      enrichGame(g);
+      games.push(g);
+    });
+  });
+  if (dupCount > 0) {
+    console.warn('%c⚠️ ' + dupCount + ' juegos duplicados detectados y descartados.',
+      'color: #f59e0b; font-weight: bold;');
+  }
+
+  rebuildIndexes();
+  document.getElementById('loading').style.display = 'none';
+
+  document.getElementById('footer-date').textContent =
+    new Date(indexData.generated || new Date()).toLocaleDateString(
+      currentLang === 'es' ? 'es-ES' : (currentLang === 'pt-br' ? 'pt-BR' : (currentLang === 'fr' ? 'fr-FR' : (currentLang === 'de' ? 'de-DE' : (currentLang === 'it' ? 'it-IT' : (currentLang === 'ja' ? 'ja-JP' : 'en-US'))))),
+      { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+  updateFiltersBadge();
+  render();
+  reportUnmappedTags();
+}
+
+/* ============================================================
+   CHIPS DINÁMICOS
+   ============================================================ */
+const CHIPS_VISIBLE_MAX = 8;
+
+function gamesMatchingDraftExcept(excludeKey) {
+  const d = state.draft;
+  return games.filter(g => {
+    if (excludeKey !== 'system' && d.system && g.console !== d.system) return false;
+    if (excludeKey !== 'region' && d.region && !g._regions.some(r => r.label === d.region)) return false;
+    if (excludeKey !== 'lang'   && d.lang   && !g._langs.some(l => l.label === d.lang)) return false;
+    if (excludeKey !== 'cat'    && d.cat    && !g.cats.includes(d.cat)) return false;
+    if (excludeKey !== 'coll'   && d.coll   && !g._collections.some(c => c.label === d.coll)) return false;
+    return true;
+  });
+}
+
+function computeDraftAvailableChips() {
+  const sysC = {}, regC = {}, langC = {}, catC = {}, collC = {};
+  gamesMatchingDraftExcept('system').forEach(g => { sysC[g.console] = (sysC[g.console] || 0) + 1; });
+  gamesMatchingDraftExcept('region').forEach(g => {
+    new Set(g._regions.map(r => r.label)).forEach(r => regC[r] = (regC[r] || 0) + 1);
+  });
+  gamesMatchingDraftExcept('lang').forEach(g => {
+    new Set(g._langs.map(l => l.label)).forEach(l => langC[l] = (langC[l] || 0) + 1);
+  });
+  gamesMatchingDraftExcept('cat').forEach(g => {
+    g.cats.forEach(c => catC[c] = (catC[c] || 0) + 1);
+  });
+  gamesMatchingDraftExcept('coll').forEach(g => {
+    new Set(g._collections.map(c => c.label)).forEach(c => collC[c] = (collC[c] || 0) + 1);
+  });
+  draftCounts.system = sysC; draftCounts.region = regC; draftCounts.lang = langC;
+  draftCounts.cat = catC; draftCounts.coll = collC;
+  draftAvailable.system = Object.keys(sysC).sort((a, b) => sysC[b] - sysC[a] || a.localeCompare(b));
+  draftAvailable.region = Object.keys(regC).sort((a, b) => regC[b] - regC[a] || a.localeCompare(b));
+  draftAvailable.lang   = Object.keys(langC).sort((a, b) => langC[b] - langC[a] || a.localeCompare(b));
+  draftAvailable.cat    = Object.keys(catC).sort((a, b) => catC[b] - catC[a] || a.localeCompare(b));
+  draftAvailable.coll   = Object.keys(collC).sort((a, b) => collC[b] - collC[a] || a.localeCompare(b));
+}
+
+function makeChip(label, count, isActive, onClick, extraClass) {
+  const el = document.createElement('div');
+  el.className = 'chip' + (extraClass ? ' ' + extraClass : '') + (isActive ? ' active' : '');
+  el.innerHTML = escapeHtml(label) + (count != null ? '<span class="count">' + count + '</span>' : '');
+  el.onclick = onClick;
+  return el;
+}
+
+function toggleDraftFilter(sectionKey, value) {
+  state.draft[sectionKey] = (value === '' || state.draft[sectionKey] === value) ? '' : value;
+  computeDraftAvailableChips();
+  renderAllChips();
+}
+
+function renderChipSection(container, sectionKey, items, counts, allLabelKey, chipClass) {
+  const frag = document.createDocumentFragment();
+  const current = state.draft[sectionKey];
+  frag.appendChild(makeChip(t(allLabelKey), null, current === '', () => toggleDraftFilter(sectionKey, ''), chipClass));
+  const expanded = state.expanded[sectionKey];
+  const visibleItems = expanded ? items : items.slice(0, CHIPS_VISIBLE_MAX);
+  const hiddenCount = Math.max(0, items.length - CHIPS_VISIBLE_MAX);
+  visibleItems.forEach(item => {
+    frag.appendChild(makeChip(item, counts[item] || 0, current === item, () => toggleDraftFilter(sectionKey, item), chipClass));
+  });
+  if (!expanded && hiddenCount > 0) {
+    const more = document.createElement('div');
+    more.className = 'chip chip-more' + (chipClass ? ' ' + chipClass : '');
+    more.textContent = t('more') + ' +' + hiddenCount;
+    more.onclick = () => { state.expanded[sectionKey] = true; renderAllChips(); };
+    frag.appendChild(more);
+  } else if (expanded && items.length > CHIPS_VISIBLE_MAX) {
+    const less = document.createElement('div');
+    less.className = 'chip chip-more' + (chipClass ? ' ' + chipClass : '');
+    less.textContent = t('less');
+    less.onclick = () => { state.expanded[sectionKey] = false; renderAllChips(); };
+    frag.appendChild(less);
+  }
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+function renderAllChips() {
+  const sysBlock = document.getElementById('system-block');
+  if (consoles.length <= 1 || draftAvailable.system.length === 0) sysBlock.style.display = 'none';
+  else { sysBlock.style.display = ''; renderChipSection(systemChipsEl, 'system', draftAvailable.system, draftCounts.system, 'all_systems', 'system-chip'); }
+
+  const regBlock = document.getElementById('region-block');
+  if (draftAvailable.region.length === 0) regBlock.style.display = 'none';
+  else { regBlock.style.display = ''; renderChipSection(regionChipsEl, 'region', draftAvailable.region, draftCounts.region, 'all_regions', 'region-chip'); }
+
+  const langBlock = document.getElementById('lang-block');
+  if (draftAvailable.lang.length === 0) langBlock.style.display = 'none';
+  else { langBlock.style.display = ''; renderChipSection(langChipsEl, 'lang', draftAvailable.lang, draftCounts.lang, 'all_langs', 'lang-chip'); }
+
+  const collBlock = document.getElementById('coll-block');
+  if (Object.keys(collections).length === 0 || draftAvailable.coll.length === 0) collBlock.style.display = 'none';
+  else { collBlock.style.display = ''; renderChipSection(collChipsEl, 'coll', draftAvailable.coll, draftCounts.coll, 'all_collections', 'collection-chip'); }
+
+  const catBlock = document.getElementById('cat-block');
+  if (draftAvailable.cat.length === 0) catBlock.style.display = 'none';
+  else { catBlock.style.display = ''; renderChipSection(catChipsEl, 'cat', draftAvailable.cat, draftCounts.cat, 'all_categories', ''); }
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+function openFilters() {
+  state.draft = { system: state.system, region: state.region, lang: state.lang, cat: state.cat, coll: state.coll };
+  computeDraftAvailableChips();
+  renderAllChips();
+  filtersPanel.classList.add('show');
+  filtersBtn.classList.add('active');
+  document.body.classList.add('no-scroll');
+}
+function closeFilters() {
+  filtersPanel.classList.remove('show');
+  filtersBtn.classList.remove('active');
+  document.body.classList.remove('no-scroll');
+}
+function applyFilters() {
+  state.system = state.draft.system;
+  state.region = state.draft.region;
+  state.lang   = state.draft.lang;
+  state.cat    = state.draft.cat;
+  state.coll   = state.draft.coll;
+  state.page = 1;
+  resetOpen();
+  updateFiltersBadge();
+  closeFilters();
+  render();
+}
+function resetFilters() {
+  state.draft = { system:'', region:'', lang:'', cat:'', coll:'' };
+  state.expanded = { system:false, region:false, lang:false, coll:false, cat:false };
+  state.system = ''; state.region = ''; state.lang = ''; state.cat = ''; state.coll = '';
+  state.q = ''; state.sort = 'name'; state.page = 1;
+  searchEl.value = '';
+  clearEl.style.display = 'none';
+  sortChipsEl.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.sort === 'name'));
+  resetOpen();
+  updateFiltersBadge();
+  computeDraftAvailableChips();
+  renderAllChips();
+  render();
+}
+
+filtersBtn.onclick = () => { if (filtersPanel.classList.contains('show')) closeFilters(); else openFilters(); };
+document.getElementById('filters-close').onclick = closeFilters;
+filtersPanel.addEventListener('click', (e) => { if (e.target === filtersPanel) closeFilters(); });
+applyBtn.onclick = applyFilters;
+resetBtn.onclick = resetFilters;
+
+sortChipsEl.querySelectorAll('.chip').forEach(chip => {
+  chip.onclick = () => {
+    sortChipsEl.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.sort = chip.dataset.sort;
+    state.page = 1; resetOpen();
+    render();
+  };
+});
+viewChipsEl.querySelectorAll('.chip').forEach(chip => {
+  chip.onclick = () => {
+    state.viewMode = chip.dataset.view;
+    try { localStorage.setItem('nidv_view', state.viewMode); } catch (e) {}
+    updateViewChips();
+    collectionsBtn.classList.toggle('active', state.viewMode === 'collections');
+    state.page = 1; resetOpen();
+    render();
+  };
+});
+collectionsBtn.onclick = () => {
+  state.viewMode = state.viewMode === 'collections' ? 'normal' : 'collections';
+  try { localStorage.setItem('nidv_view', state.viewMode); } catch (e) {}
+  collectionsBtn.classList.toggle('active', state.viewMode === 'collections');
+  updateViewChips();
+  state.page = 1; resetOpen();
+  render();
+};
+mergeBtn.onclick = () => {
+  state.mergeConsoles = !state.mergeConsoles;
+  try { localStorage.setItem('nidv_merge', state.mergeConsoles ? '1' : '0'); } catch (e) {}
+  mergeBtn.classList.toggle('active', state.mergeConsoles);
+  families = buildFamilies(state.mergeConsoles);
+  state.page = 1; resetOpen();
+  updateStats();
+  render();
+};
+
+let searchTimer = null;
+searchEl.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  clearEl.style.display = searchEl.value ? 'block' : 'none';
+  searchTimer = setTimeout(() => {
+    state.q = searchEl.value.trim().toLowerCase();
+    state.page = 1; resetOpen();
+    render();
+  }, 60);
+});
+clearEl.onclick = () => {
+  searchEl.value = ''; state.q = '';
+  clearEl.style.display = 'none';
+  state.page = 1; resetOpen();
+  render(); searchEl.focus();
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== searchEl) { e.preventDefault(); searchEl.focus(); }
+});
+window.addEventListener('scroll', () => { topBtn.classList.toggle('show', window.scrollY > 400); });
+topBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+themeBtn.onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  themeBtn.textContent = next === 'light' ? '☀️' : '🌙';
+};
+
+/* ============================================================
+   MATCHING
+   ============================================================ */
+function matchesGame(g) {
+  if (state.region && !g._regions.some(r => r.label === state.region)) return false;
+  if (state.lang   && !g._langs.some(l => l.label === state.lang))     return false;
+  if (state.cat    && !g.cats.includes(state.cat))                     return false;
+  if (state.coll   && !g._collections.some(c => c.label === state.coll)) return false;
+  return true;
+}
+function matchesFamily(fam) {
+  if (state.system && !fam._allMembers.some(g => g.console === state.system)) return false;
+  if (state.q && !fam._hay.includes(state.q)) return false;
+  if (state.region || state.lang || state.cat || state.coll) {
+    if (!fam._allMembers.some(matchesGame)) return false;
+  }
+  return true;
+}
+function matchesCollectionGame(g) {
+  if (state.system && g.console !== state.system) return false;
+  if (state.q) {
+    const hay = (g.name + ' ' + g._cleanName + ' ' + g.rom + ' ' + g.id).toLowerCase();
+    if (!hay.includes(state.q)) return false;
+  }
+  if (state.region && !g._regions.some(r => r.label === state.region)) return false;
+  if (state.lang   && !g._langs.some(l => l.label === state.lang))     return false;
+  if (state.cat    && !g.cats.includes(state.cat))                     return false;
+  return true;
+}
+
+/* ============================================================
+   PAGINACIÓN + RENDER
+   ============================================================ */
+function renderPagination(totalItems, totalPages) {
+  const frag = document.createDocumentFragment();
+  if (totalItems === 0) { paginationEl.innerHTML = ''; return; }
+  const mkBtn = (label, page, disabled, current) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (current ? ' current' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    if (!disabled && !current) b.onclick = () => {
+      state.page = page; resetOpen();
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    return b;
+  };
+  frag.appendChild(mkBtn('«', 1, state.page === 1, false));
+  frag.appendChild(mkBtn('‹', state.page - 1, state.page === 1, false));
+  const pages = [];
+  const cur = state.page;
+  const addPage = p => { if (p >= 1 && p <= totalPages && !pages.includes(p)) pages.push(p); };
+  addPage(1); addPage(2);
+  for (let p = cur - 1; p <= cur + 1; p++) addPage(p);
+  addPage(totalPages - 1); addPage(totalPages);
+  pages.sort((a, b) => a - b);
+  let last = 0;
+  pages.forEach(p => {
+    if (last && p - last > 1) {
+      const dots = document.createElement('span');
+      dots.className = 'page-info'; dots.textContent = '…';
+      frag.appendChild(dots);
+    }
+    frag.appendChild(mkBtn(String(p), p, false, p === cur));
+    last = p;
+  });
+  frag.appendChild(mkBtn('›', state.page + 1, state.page === totalPages, false));
+  frag.appendChild(mkBtn('»', totalPages, state.page === totalPages, false));
+  const sel = document.createElement('select');
+  sel.className = 'perpage-select';
+  [25, 50, 100, 200, 500].forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n + ' / pág';
+    if (n === state.perPage) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.onchange = () => { state.perPage = parseInt(sel.value, 10); state.page = 1; resetOpen(); render(); };
+  frag.appendChild(sel);
+  paginationEl.innerHTML = '';
+  paginationEl.appendChild(frag);
+}
+
+let renderToken = 0;
+function render() {
+  if (state.viewMode === 'collections') renderCollectionsView();
+  else renderNormalView();
+}
+
+function renderNormalView() {
+  const sorted = families.slice();
+  if (state.sort === 'id') sorted.sort((fa, fb) => cmpId(fa.parent, fb.parent));
+  else sorted.sort((fa, fb) => cmpName(fa.parent, fb.parent));
+  const filtered = sorted.filter(matchesFamily);
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.perPage));
+  if (state.page > totalPages) state.page = totalPages;
+  if (state.page < 1) state.page = 1;
+  const start = (state.page - 1) * state.perPage;
+  const end = Math.min(start + state.perPage, total);
+  const pageItems = filtered.slice(start, end);
+
+  if (total === 0) infoEl.innerHTML = t('no_results');
+  else {
+    const word = total === 1 ? t('game_singular') : t('game_plural');
+    infoEl.innerHTML = t('showing') + ' <b>' + (start + 1) + '–' + end + '</b> ' + t('of') + ' <b>' + total + '</b> ' + word;
+  }
+
+  const token = ++renderToken;
+  listEl.innerHTML = '';
+  if (pageItems.length === 0) {
+    listEl.innerHTML = '<div class="empty">' + t('no_results') + '</div>';
+  } else {
+    const CHUNK = 50;
+    let i = 0;
+    const frag0 = document.createDocumentFragment();
+    const firstEnd = Math.min(CHUNK, pageItems.length);
+    for (; i < firstEnd; i++) frag0.appendChild(renderCard(pageItems[i]));
+    listEl.appendChild(frag0);
+    function step() {
+      if (token !== renderToken) return;
+      const frag = document.createDocumentFragment();
+      const endI = Math.min(i + CHUNK, pageItems.length);
+      for (; i < endI; i++) frag.appendChild(renderCard(pageItems[i]));
+      listEl.appendChild(frag);
+      if (i < pageItems.length) requestAnimationFrame(step);
+    }
+    if (i < pageItems.length) requestAnimationFrame(step);
+  }
+  renderPagination(total, totalPages);
+}
+
+function renderCollectionsView() {
+  const list = Object.values(collections).filter(c => {
+    if (state.coll && c.name !== state.coll) return false;
+    return c.games.some(matchesCollectionGame);
+  });
+  list.sort((a, b) => a.name.localeCompare(b.name));
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.perPage));
+  if (state.page > totalPages) state.page = totalPages;
+  if (state.page < 1) state.page = 1;
+  const start = (state.page - 1) * state.perPage;
+  const end = Math.min(start + state.perPage, total);
+  const pageItems = list.slice(start, end);
+
+  if (total === 0) infoEl.innerHTML = t('no_results');
+  else {
+    const word = total === 1 ? t('collection_singular') : t('collection_plural');
+    infoEl.innerHTML = t('showing') + ' <b>' + (start + 1) + '–' + end + '</b> ' + t('of') + ' <b>' + total + '</b> ' + word;
+  }
+  listEl.innerHTML = '';
+  if (pageItems.length === 0) {
+    listEl.innerHTML = '<div class="empty">' + t('no_results') + '</div>';
+  } else {
+    const frag = document.createDocumentFragment();
+    pageItems.forEach(c => frag.appendChild(renderCollectionCard(c)));
+    listEl.appendChild(frag);
+  }
+  renderPagination(total, totalPages);
+}
+
+/* ============================================================
+   COMPONENTES
+   ============================================================ */
+function buildDetailRows(g) {
+  const rows = [
+    ['Nombre DAT', g.name, true],
+    ['ROM', g.rom, true],
+    ['Tamaño', g.size + ' bytes (' + fmtSize(g.size) + ')', false],
+  ];
+  if (g.crc)    rows.push(['CRC32', g.crc, false]);
+  if (g.md5)    rows.push(['MD5', g.md5, false]);
+  if (g.sha1)   rows.push(['SHA1', g.sha1, false]);
+  if (g.sha256) rows.push(['SHA256', g.sha256, false]);
+  if (g.cats.length) rows.push([t('category_filter'), g.cats.join(', '), true]);
+  return rows;
+}
+function rowsToHtml(rows) {
+  return rows.map(([k, v, wrap]) =>
+    '<div class="k">' + escapeHtml(k) + '</div>'
+    + '<div class="v' + (wrap ? ' wrap' : '') + '">' + escapeHtml(v) + '</div>'
+  ).join('');
+}
+function chipHtml(item, extraClasses) {
+  const cls = 'variant-tag chip-' + (item.color || 'other') + (extraClasses ? ' ' + extraClasses : '')
+    + (item.inferred ? ' inferred' : '');
+  return '<span class="' + cls + '">' + escapeHtml(item.label) + '</span>';
+}
+function consoleChipHtml(consoleName) {
+  return '<span class="variant-tag chip-console tiny">' + escapeHtml(consoleName) + '</span>';
+}
+
+function renderSubmember(g) {
+  const mk = 'sub_' + key(g);
+  const isOpen = state.openMembers.has(mk);
+  const owned = hasOwnedData && ownedSet.has(key(g));
+  const chips = [];
+  if (state.mergeConsoles) chips.push(consoleChipHtml(g.console));
+
+  /* Chip del tipo principal (BETA, REV, ARCADE, PROTO...). Se muestra
+     SIEMPRE, tenga o no sufijo. Si hay sufijo (Rev A, Beta 1), se añade aparte. */
+  if (g._variants.length > 0) {
+    const v = g._variants[0];
+    chips.push(chipHtml(v, 'tiny'));
+    if (v.suffix) {
+      chips.push('<span class="variant-tag chip-variant tiny">' + escapeHtml(v.suffix) + '</span>');
+    }
+  }
+
+  /* Otras variantes, licencias, ediciones, features, colecciones, otros */
+  const primaryLabel = g._primaryGroup.label;
+  g._variants.forEach((v, i) => { if (i !== 0) chips.push(chipHtml(v, 'tiny')); });
+  g._licenses.forEach(l => { if (l.label !== primaryLabel) chips.push(chipHtml(l, 'tiny')); });
+  g._editions.forEach(e => { if (e.label !== primaryLabel) chips.push(chipHtml(e, 'tiny')); });
+  g._features.forEach(f => { if (f.label !== primaryLabel) chips.push(chipHtml(f, 'tiny')); });
+  g._collections.forEach(c => chips.push(chipHtml(c, 'tiny')));
+  g._others.forEach(o => { if (o.label !== primaryLabel) chips.push(chipHtml(o, 'tiny')); });
+
+  const langsHtml = g._langs.map(l => chipHtml(l, 'tiny')).join('');
+  const ownedBadge = owned ? '<span class="badge owned-badge">✓ ' + t('owned') + '</span>' : '';
+
+  const el = document.createElement('div');
+  el.className = 'submember' + (isOpen ? ' open' : '');
+  el.dataset.mkey = mk;
+  el.innerHTML = ''
+    + '<div class="submember-head">'
+    +   '<div class="sh-main">' + chips.join('')
+    +     '<span class="gid">' + escapeHtml(g.id) + '</span>'
+    +     '<span class="sname">' + escapeHtml(g._cleanName) + '</span>'
+    +   '</div>'
+    +   '<span class="ssize">' + fmtSize(g.size) + '</span>'
+    + '</div>'
+    + (langsHtml ? '<div class="submember-langs">' + langsHtml + '</div>' : '')
+    + (ownedBadge ? '<div class="submember-badges">' + ownedBadge + '</div>' : '')
+    + '<div class="submember-details">' + rowsToHtml(buildDetailRows(g)) + '</div>';
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.openMembers.has(mk)) { state.openMembers.delete(mk); el.classList.remove('open'); }
+    else { state.openMembers.add(mk); el.classList.add('open'); }
+  });
+  return el;
+}
+
+function renderTypeGroup(groupInfo, variants) {
+  const el = document.createElement('div');
+  el.className = 'type-group';
+  if (groupInfo.kind === 'license') el.style.borderLeftColor = 'var(--accent-5)';
+  else if (groupInfo.kind === 'edition') el.style.borderLeftColor = 'var(--accent-6)';
+  else if (groupInfo.kind === 'feature') el.style.borderLeftColor = 'var(--accent-feat)';
+  else if (groupInfo.kind === 'other') el.style.borderLeftColor = 'var(--text-dim)';
+  const header = document.createElement('div');
+  header.className = 'type-header';
+  header.innerHTML = chipHtml(groupInfo, '')
+    + '<span class="type-count">' + variants.length + ' ROM' + (variants.length === 1 ? '' : 's') + '</span>';
+  const list = document.createElement('div');
+  list.className = 'type-variants';
+  variants.forEach(v => list.appendChild(renderSubmember(v)));
+  el.appendChild(header);
+  el.appendChild(list);
+  return el;
+}
+
+function renderMember(regionKey, group) {
+  const regionGames = group.games;
+  if (!regionGames || regionGames.length === 0) return null;
+  const mains = regionGames.filter(g =>
+    g._variants.length === 0 && g._licenses.length === 0 && g._editions.length === 0
+    && g._features.length === 0 && g._collections.length === 0 && g._others.length === 0
+  );
+  const mainGame = mains.length > 0 ? mains[0] : regionGames[0];
+  const mk = 'mem_' + key(mainGame) + '_' + regionKey;
+  const isOpen = state.openMembers.has(mk);
+  const el = document.createElement('div');
+  el.className = 'member' + (isOpen ? ' open' : '');
+  el.dataset.mkey = mk;
+  const regionChips = mainGame._regions.map(r => chipHtml(r, '')).join('');
+  const regionStackClass = mainGame._regions.length > 1 ? 'member-regions stacked' : 'member-regions';
+  const mainExtras = [];
+  if (state.mergeConsoles) mainExtras.push(consoleChipHtml(mainGame.console));
+  mainGame._variants.forEach(v => mainExtras.push(chipHtml(v, '')));
+  mainGame._licenses.forEach(l => mainExtras.push(chipHtml(l, '')));
+  mainGame._editions.forEach(e => mainExtras.push(chipHtml(e, '')));
+  mainGame._features.forEach(f => mainExtras.push(chipHtml(f, '')));
+  mainGame._collections.forEach(c => mainExtras.push(chipHtml(c, '')));
+  mainGame._others.forEach(o => mainExtras.push(chipHtml(o, '')));
+  const mainExtrasHtml = mainExtras.join('');
+  const langsHtml = mainGame._langs.map(l => chipHtml(l, '')).join('');
+  const owned = hasOwnedData && regionGames.some(g => ownedSet.has(key(g)));
+  const ownedBadge = owned ? '<span class="badge owned-badge">✓ ' + t('owned') + '</span>' : '';
+  const others = regionGames.filter(g => g !== mainGame);
+  const variantCount = others.length;
+  const variantLine = variantCount > 0
+    ? '<span class="inline-count">' + variantCount + ' '
+      + (variantCount === 1 ? t('variant_singular') : t('variants')) + '</span>'
+    : '';
+  el.innerHTML = ''
+    + '<div class="member-head">'
+    +   '<div class="' + regionStackClass + '">' + regionChips + '</div>'
+    +   '<span class="gid">' + escapeHtml(mainGame.id) + '</span>'
+    +   '<span class="mname">' + escapeHtml(mainGame._cleanName) + '</span>'
+    +   '<div class="mh-right">'
+    +     '<span class="msize">' + fmtSize(mainGame.size) + '</span>'
+    +     variantLine
+    +   '</div>'
+    + '</div>'
+    + (mainExtrasHtml ? '<div class="member-extras">' + mainExtrasHtml + '</div>' : '')
+    + (langsHtml ? '<div class="member-extras">' + langsHtml + '</div>' : '')
+    + (ownedBadge ? '<div class="member-badges">' + ownedBadge + '</div>' : '')
+    + '<div class="member-details">' + rowsToHtml(buildDetailRows(mainGame)) + '</div>';
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.openMembers.has(mk)) { state.openMembers.delete(mk); el.classList.remove('open'); }
+    else { state.openMembers.add(mk); el.classList.add('open'); }
+  });
+  if (others.length > 0) {
+    const subBox = document.createElement('div');
+    subBox.className = 'submembers';
+    const byType = {};
+    others.forEach(s => {
+      const grp = s._primaryGroup;
+      const k = grp.label;
+      if (!byType[k]) byType[k] = { info: grp, items: [] };
+      byType[k].items.push(s);
+    });
+    const sortedKeys = Object.keys(byType).sort((a, b) => {
+      const pa = GROUP_ORDER[a] != null ? GROUP_ORDER[a] : 100;
+      const pb = GROUP_ORDER[b] != null ? GROUP_ORDER[b] : 100;
+      if (pa !== pb) return pa - pb;
+      return a.localeCompare(b);
+    });
+    sortedKeys.forEach(k => {
+      const grp = byType[k];
+      grp.items.sort(cmpName);
+      if (grp.items.length === 1) subBox.appendChild(renderSubmember(grp.items[0]));
+      else subBox.appendChild(renderTypeGroup(grp.info, grp.items));
+    });
+    el.appendChild(subBox);
+  }
+  return el;
+}
+
+function renderCard(fam) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  const pk = key(fam.parent);
+  if (state.openFamily === pk) el.classList.add('open');
+  el.dataset.cardKey = pk;
+  const p = fam.parent;
+  const visibleGames = fam._allMembers.filter(matchesGame);
+  if (visibleGames.length === 0) return el;
+  const visibleByRegion = {};
+  visibleGames.forEach(g => {
+    const r = state.region || g._primaryRegion;
+    if (!visibleByRegion[r]) visibleByRegion[r] = { games: [] };
+    visibleByRegion[r].games.push(g);
+  });
+  Object.values(visibleByRegion).forEach(grp => grp.games.sort(cmpIdNum));
+  const regionCount = Object.keys(visibleByRegion).length;
+  const allCatsSet = new Set();
+  fam._allMembers.forEach(g => g.cats.forEach(c => allCatsSet.add(c)));
+  const catBadges = [...allCatsSet].map(c => '<span class="badge cat">' + escapeHtml(c) + '</span>').join('');
+  const gamesBadge = '<span class="badge games-count">' + regionCount + ' '
+    + (regionCount === 1 ? t('game_singular') : t('game_plural')) + '</span>';
+  const ownedBadge = fam._anyOwned ? '<span class="badge owned-badge">✓ ' + t('owned') + '</span>' : '';
+  let consoleOrMergedBadge = '';
+  if (fam._merged) {
+    consoleOrMergedBadge = '<span class="badge merged-badge">🔗 ' + fam._consoles.length + ' '
+      + (fam._consoles.length === 1 ? 'consola' : 'consolas') + '</span>';
+  } else {
+    consoleOrMergedBadge = '<span class="badge console-badge">' + escapeHtml(p.console) + '</span>';
+  }
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  header.innerHTML = ''
+    + '<div class="row1">'
+    +   '<span class="gname">' + escapeHtml(p._cleanName) + '</span>'
+    +   (fam._merged ? '' : '<span class="gid">' + escapeHtml(p.id) + '</span>')
+    + '</div>'
+    + '<div class="badges">' + consoleOrMergedBadge + catBadges + gamesBadge + ownedBadge + '</div>';
+  const membersBox = document.createElement('div');
+  membersBox.className = 'members';
+  const regionKeys = Object.keys(visibleByRegion).sort((a, b) => {
+    if (a === '(Sin región)') return 1;
+    if (b === '(Sin región)') return -1;
+    return a.localeCompare(b);
+  });
+  regionKeys.forEach(r => {
+    const grp = visibleByRegion[r];
+    const node = renderMember(r, grp);
+    if (node) membersBox.appendChild(node);
+  });
+  el.appendChild(header);
+  el.appendChild(membersBox);
+  header.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.openFamily === pk) {
+      state.openFamily = null;
+      state.openMembers.clear();
+      el.classList.remove('open');
+    } else {
+      if (state.openFamily) {
+        const prev = listEl.querySelector('.card[data-card-key="' + CSS.escape(state.openFamily) + '"]');
+        if (prev) prev.classList.remove('open');
+      }
+      state.openFamily = pk;
+      state.openMembers.clear();
+      el.classList.add('open');
+    }
+  });
+  return el;
+}
+
+function renderCollectionCard(coll) {
+  const el = document.createElement('div');
+  el.className = 'card collection-card';
+  const pk = 'coll::' + coll.name;
+  if (state.openFamily === pk) el.classList.add('open');
+  el.dataset.cardKey = pk;
+  const visibleGames = coll.games.filter(matchesCollectionGame);
+  if (visibleGames.length === 0) return el;
+  const consolesSet = [...new Set(visibleGames.map(g => g.console))].sort();
+  const ownedCount = visibleGames.filter(g => hasOwnedData && ownedSet.has(key(g))).length;
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  header.innerHTML = ''
+    + '<div class="row1"><span class="gname">' + escapeHtml(coll.name) + '</span></div>'
+    + '<div class="badges">'
+    +   '<span class="badge collection-badge">📦 ' + t('view_collections') + '</span>'
+    +   '<span class="badge games-count">' + visibleGames.length + ' '
+    +   (visibleGames.length === 1 ? 'ROM' : 'ROMs') + '</span>'
+    +   (consolesSet.length > 1
+        ? '<span class="badge merged-badge">🔗 ' + consolesSet.length + ' consolas</span>'
+        : '<span class="badge console-badge">' + escapeHtml(consolesSet[0]) + '</span>')
+    +   (ownedCount > 0 ? '<span class="badge owned-badge">✓ ' + ownedCount + '/' + visibleGames.length + '</span>' : '')
+    + '</div>';
+  const membersBox = document.createElement('div');
+  membersBox.className = 'members';
+  const byGame = {};
+  visibleGames.forEach(g => {
+    const k = g._cleanName.toLowerCase();
+    if (!byGame[k]) byGame[k] = { name: g._cleanName, games: [] };
+    byGame[k].games.push(g);
+  });
+  Object.values(byGame).forEach(grp => {
+    grp.games.sort((a, b) => a.console !== b.console ? a.console.localeCompare(b.console) : cmpIdNum(a, b));
+  });
+  const gameGroups = Object.values(byGame).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity:'base' }));
+  gameGroups.forEach(grp => membersBox.appendChild(renderCollectionMember(grp.name, grp.games)));
+  el.appendChild(header);
+  el.appendChild(membersBox);
+  header.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.openFamily === pk) {
+      state.openFamily = null;
+      state.openMembers.clear();
+      el.classList.remove('open');
+    } else {
+      if (state.openFamily) {
+        const prev = listEl.querySelector('.card[data-card-key="' + CSS.escape(state.openFamily) + '"]');
+        if (prev) prev.classList.remove('open');
+      }
+      state.openFamily = pk;
+      state.openMembers.clear();
+      el.classList.add('open');
+    }
+  });
+  return el;
+}
+
+function renderCollectionMember(gameName, games) {
+  const mk = 'coll_mem::' + gameName + '::' + games.map(g => key(g)).join('|');
+  const isOpen = state.openMembers.has(mk);
+  const el = document.createElement('div');
+  el.className = 'member' + (isOpen ? ' open' : '');
+  el.dataset.mkey = mk;
+  const anyOwned = hasOwnedData && games.some(g => ownedSet.has(key(g)));
+  const ownedBadge = anyOwned ? '<span class="badge owned-badge">✓ ' + t('owned') + '</span>' : '';
+  const extras = [];
+  [...new Set(games.map(g => g.console))].forEach(c => extras.push(consoleChipHtml(c)));
+  const regionLbls = new Set();
+  games.forEach(g => g._regions.forEach(r => regionLbls.add(r.label)));
+  [...regionLbls].forEach(lbl => extras.push('<span class="variant-tag chip-region tiny">' + escapeHtml(lbl) + '</span>'));
+  const langsLbls = new Set();
+  games.forEach(g => g._langs.forEach(l => langsLbls.add(l.label)));
+  [...langsLbls].forEach(lbl => extras.push('<span class="variant-tag chip-lang tiny">' + escapeHtml(lbl) + '</span>'));
+  const variantCount = games.length > 1 ? games.length : 0;
+  const variantLine = variantCount > 0
+    ? '<span class="inline-count">' + variantCount + ' '
+      + (variantCount === 1 ? t('variant_singular') : t('variants')) + '</span>'
+    : '';
+  el.innerHTML = ''
+    + '<div class="member-head">'
+    +   '<span class="mname">' + escapeHtml(gameName) + '</span>'
+    +   '<div class="mh-right">'
+    +     (games.length === 1 ? '<span class="msize">' + fmtSize(games[0].size) + '</span>' : '')
+    +     variantLine
+    +   '</div>'
+    + '</div>'
+    + (extras.length ? '<div class="member-extras">' + extras.join('') + '</div>' : '')
+    + (ownedBadge ? '<div class="member-badges">' + ownedBadge + '</div>' : '');
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.openMembers.has(mk)) { state.openMembers.delete(mk); el.classList.remove('open'); }
+    else { state.openMembers.add(mk); el.classList.add('open'); }
+  });
+  if (games.length > 0) {
+    const subBox = document.createElement('div');
+    subBox.className = 'submembers';
+    games.forEach(g => subBox.appendChild(renderCollectionSubmember(g)));
+    el.appendChild(subBox);
+  }
+  return el;
+}
+
+function renderCollectionSubmember(g) {
+  const mk = 'coll_sub::' + key(g);
+  const isOpen = state.openMembers.has(mk);
+  const owned = hasOwnedData && ownedSet.has(key(g));
+  const chips = [];
+  chips.push(consoleChipHtml(g.console));
+  g._regions.forEach(r => chips.push(chipHtml(r, 'tiny')));
+  g._variants.forEach(v => chips.push(chipHtml(v, 'tiny')));
+  g._licenses.forEach(l => chips.push(chipHtml(l, 'tiny')));
+  g._editions.forEach(e => chips.push(chipHtml(e, 'tiny')));
+  g._features.forEach(f => chips.push(chipHtml(f, 'tiny')));
+  const langsHtml = g._langs.map(l => chipHtml(l, 'tiny')).join('');
+  const ownedBadge = owned ? '<span class="badge owned-badge">✓ ' + t('owned') + '</span>' : '';
+  const el = document.createElement('div');
+  el.className = 'submember' + (isOpen ? ' open' : '');
+  el.dataset.mkey = mk;
+  el.innerHTML = ''
+    + '<div class="submember-head">'
+    +   '<div class="sh-main">' + chips.join('')
+    +     '<span class="gid">' + escapeHtml(g.id) + '</span>'
+    +     '<span class="sname">' + escapeHtml(g._cleanName) + '</span>'
+    +   '</div>'
+    +   '<span class="ssize">' + fmtSize(g.size) + '</span>'
+    + '</div>'
+    + (langsHtml ? '<div class="submember-langs">' + langsHtml + '</div>' : '')
+    + (ownedBadge ? '<div class="submember-badges">' + ownedBadge + '</div>' : '')
+    + '<div class="submember-details">' + rowsToHtml(buildDetailRows(g)) + '</div>';
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.openMembers.has(mk)) { state.openMembers.delete(mk); el.classList.remove('open'); }
+    else { state.openMembers.add(mk); el.classList.add('open'); }
+  });
+  return el;
+}
+
+/* ============================================================
+   REPORTE DE TAGS SIN MAPEAR
+   ============================================================ */
+function reportUnmappedTags() {
+  const unmapped = new Map();
+  games.forEach(g => {
+    const chips = [].concat(g._variants, g._licenses, g._editions, g._features, g._others, g._collections);
+    chips.forEach(c => {
+      if (!c.unmapped) return;
+      const k = c.raw;
+      if (!unmapped.has(k)) unmapped.set(k, { count: 0, examples: [] });
+      const e = unmapped.get(k);
+      e.count++;
+      if (e.examples.length < 3) e.examples.push(g.name);
+    });
+  });
+  if (unmapped.size === 0) { console.log('%c✅ Todas las etiquetas están mapeadas.', 'color: #23c98c; font-weight: bold;'); return; }
+  console.groupCollapsed('%c⚠️ ' + unmapped.size + ' etiquetas sin mapear', 'color: #ec4899; font-weight: bold; font-size: 13px;');
+  [...unmapped.entries()].sort((a, b) => b[1].count - a[1].count).forEach(([raw, data]) => {
+    console.log('%c' + raw + '%c  →  ' + data.count + ' uso' + (data.count === 1 ? '' : 's'),
+      'color: #f59e0b; font-weight: bold;', 'color: #8b93a7;');
+    data.examples.forEach(ex => console.log('    • ' + ex));
+  });
+  console.groupEnd();
+}
+
+/* ============================================================
+   ARRANQUE
+   ============================================================ */
+function showError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-box').style.display = 'block';
+  document.getElementById('error-msg').textContent = msg;
+}
+
+(async () => {
+  await applyStaticI18n();
+  if (!localStorage.getItem('nidv_legal_accepted')) {
+    document.getElementById('modal-aviso').classList.add('show');
+  }
+  if (state.viewMode === 'collections') collectionsBtn.classList.add('active');
+  updateViewChips();
+  try {
+    await loadAllData();
+  } catch (err) {
+    console.error(err);
+    showError(err.message || String(err));
+  }
+})();
+</script>
+</body>
+</html>
